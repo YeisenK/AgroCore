@@ -28,37 +28,40 @@ AgroCore es una aplicación pensada para la gestión de viveros y sistemas agrí
 ## Estructura básica
 
 agrocore/
-│-- .gitignore
-│-- agrocore.iml            
-│-- pubspec.yaml            
-│-- README.md               
-│-- analysis_options.yaml   
-│
-├─ lib/                     ← código fuente Flutter
-│   └─ ...                 
-│
-├─ assets/                  (si usas imágenes/fonts/json)
-│   └─ ...
-│
-├─ test/                    (tests)
-│   └─ ...
-│
-├─ android/                 ← proyecto Android
-│   ├─ app/
-│   │   └─ src/main/java/... 
-│   └─ gradle/wrapper/...
-│
-├─ ios/                     ← proyecto iOS
-│   └─ Runner/...
-│
-├─ macos/                   ← desktop macOS (si lo usas)
-│   └─ Runner/...
-│
-├─ linux/                   ← desktop Linux (si lo usas)
-│   └─ ...
-│
-└─ windows/                 ← desktop Windows (si lo usas)
-    └─ runner/...
+├─ lib/
+│  ├─ main.dart
+│  ├─ dashboards/
+│  │  └─ ingeniero_dashboard.dart
+│  └─ pages/
+│     └─ login.dart
+├─ assets/
+│  ├─ images/
+│  ├─ fonts/
+│  └─ mock/
+├─ web/
+│  ├─ index.html
+│  ├─ manifest.json
+│  └─ icons/
+│     ├─ Icon-192.png
+│     ├─ Icon-512.png
+│     ├─ Icon-maskable-192.png
+│     └─ Icon-maskable-512.png
+├─ android/            ← app nativa (Android)
+│  └─ app/src/main/...
+├─ ios/                ← app nativa (iOS)
+│  └─ Runner/...
+├─ macos/              ← desktop (macOS)
+│  └─ Runner/...
+├─ linux/              ← desktop (Linux)
+│  └─ runner/...
+├─ windows/            ← desktop (Windows)
+│  └─ runner/...
+├─ test/
+│  └─ ...
+├─ pubspec.yaml
+├─ analysis_options.yaml
+├─ README.md
+└─ .gitignore
 
 
 ---
