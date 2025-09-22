@@ -29,7 +29,7 @@ AgroCore es una aplicación pensada para la gestión de viveros y sistemas agrí
 
 agrocore/
 ├─ lib/
-
+│
 │  ├─ main.dart
 
 │  ├─ dashboards/
