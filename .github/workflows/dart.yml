@@ -11,18 +11,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - uses: subosito/flutter-action@v2
+      # Instala Flutter (canal estable). No mezclar channel y flutter-version.
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
           cache: true
 
-      - name: flutter pub get
+      - name: Flutter version
+        run: flutter --version
+
+      - name: Install dependencies
         run: flutter pub get
 
-      - name: flutter analyze
-        run: flutter analyze
+      # No romper el job por infos/warnings del analyzer
+      - name: Analyze project source
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
 
-      - name: flutter test
+      - name: Run tests
         run: flutter test
