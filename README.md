@@ -21,7 +21,7 @@ AgroCore es una aplicación pensada para la gestión de viveros y sistemas agrí
 - Provider (estado)  
 - fl_chart (gráficas)  
 - GitHub para el control de versiones  
-- Sensores IoT (ESP8266, LoRa, Arduino)  
+- Sensores IoT (ESP8266, Arduino)  
 
 ---
 
