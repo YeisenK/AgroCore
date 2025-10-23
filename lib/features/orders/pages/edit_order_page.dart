@@ -15,16 +15,16 @@ class EditOrderPage extends StatefulWidget {
 
 class _EditOrderPageState extends State<EditOrderPage> {
   final _formKey = GlobalKey<FormState>();
-  
+
   late TextEditingController _customerController;
   late TextEditingController _cropController;
   late TextEditingController _varietyController;
   late TextEditingController _quantityController;
   late TextEditingController _notesController;
-  
+
   late OrderStatus _selectedStatus;
   late DateTime _selectedDate;
-  
+
   bool _loading = false;
   OrderModel? _order;
 
@@ -42,7 +42,8 @@ class _EditOrderPageState extends State<EditOrderPage> {
         _customerController = TextEditingController(text: order.customer);
         _cropController = TextEditingController(text: order.crop);
         _varietyController = TextEditingController(text: order.variety);
-        _quantityController = TextEditingController(text: order.quantity.toString());
+        _quantityController =
+            TextEditingController(text: order.quantity.toString());
         _notesController = TextEditingController(text: order.notes ?? '');
         _selectedStatus = order.status;
         _selectedDate = order.deliveryDate;
@@ -101,7 +102,9 @@ class _EditOrderPageState extends State<EditOrderPage> {
         quantity: double.parse(_quantityController.text),
         deliveryDate: _selectedDate,
         status: _selectedStatus,
-        notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+        notes: _notesController.text.trim().isEmpty
+            ? null
+            : _notesController.text.trim(),
       );
 
       await context.read<OrderProvider>().updateOrder(updatedOrder);
@@ -237,19 +240,19 @@ class _EditOrderPageState extends State<EditOrderPage> {
               ),
             ),
             const SizedBox(height: 8),
-            
+
             // Lista de campos
             const SizedBox(height: 32),
             _buildFieldList(),
             const SizedBox(height: 32),
-            
+
             // Línea divisoria
             Container(
               height: 1,
               color: Colors.grey[700],
               margin: const EdgeInsets.symmetric(vertical: 24),
             ),
-            
+
             // Botones
             _buildActionButtons(),
           ],

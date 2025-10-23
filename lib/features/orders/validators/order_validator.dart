@@ -43,7 +43,7 @@ class OrderValidator {
     final today = DateTime.now();
     final todayDate = DateTime(today.year, today.month, today.day);
     final deliveryDate = DateTime(date.year, date.month, date.day);
-    
+
     if (deliveryDate.isBefore(todayDate)) {
       return 'La fecha no puede ser anterior a hoy';
     }

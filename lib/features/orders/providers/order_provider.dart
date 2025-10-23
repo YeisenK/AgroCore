@@ -4,7 +4,7 @@ import '../repositories/order_repository.dart';
 
 class OrderProvider with ChangeNotifier {
   final OrderRepository _repository = OrderRepository();
-  
+
   List<OrderModel> _orders = [];
   bool _loading = false;
   String? _error;
@@ -36,9 +36,9 @@ class OrderProvider with ChangeNotifier {
   Future<void> loadOrders() async {
     _loading = true;
     notifyListeners();
-    
+
     await Future.delayed(const Duration(seconds: 1));
-    
+
     try {
       _orders = await _repository.getOrders();
       _error = null;
@@ -53,18 +53,18 @@ class OrderProvider with ChangeNotifier {
   Future<void> addOrder(OrderModel order) async {
     try {
       await _repository.addOrder(order);
-      
+
       // Aplicar valores por defecto si están vacíos
       final orderWithDefaults = order.copyWith(
         unit: order.unit.isEmpty ? "unidades" : order.unit,
       );
-      
+
       _orders.insert(0, orderWithDefaults);
-      
+
       if (orderWithDefaults.status == OrderStatus.shipped) {
         _showShippingAlert(orderWithDefaults);
       }
-      
+
       _error = null;
       notifyListeners();
     } catch (e) {
@@ -80,11 +80,11 @@ class OrderProvider with ChangeNotifier {
       final index = _orders.indexWhere((order) => order.id == updatedOrder.id);
       if (index != -1) {
         _orders[index] = updatedOrder;
-        
+
         if (updatedOrder.status == OrderStatus.shipped) {
           _showShippingAlert(updatedOrder);
         }
-        
+
         _error = null;
         notifyListeners();
       }
@@ -109,13 +109,13 @@ class OrderProvider with ChangeNotifier {
 
   List<OrderModel> searchOrders(String query) {
     if (query.isEmpty) return _orders;
-    
+
     final lowercaseQuery = query.toLowerCase();
     return _orders.where((order) {
       return order.customer.toLowerCase().contains(lowercaseQuery) ||
-             order.crop.toLowerCase().contains(lowercaseQuery) ||
-             order.variety.toLowerCase().contains(lowercaseQuery) ||
-             order.id.toLowerCase().contains(lowercaseQuery);
+          order.crop.toLowerCase().contains(lowercaseQuery) ||
+          order.variety.toLowerCase().contains(lowercaseQuery) ||
+          order.id.toLowerCase().contains(lowercaseQuery);
     }).toList();
   }
 
@@ -158,7 +158,7 @@ class OrderProvider with ChangeNotifier {
     if (_orders.isEmpty) {
       return "AA01";
     }
-    
+
     // Extraer el número más alto de los IDs existentes
     int maxNumber = 0;
     for (var order in _orders) {
@@ -173,7 +173,7 @@ class OrderProvider with ChangeNotifier {
         }
       }
     }
-    
+
     return 'AA${(maxNumber + 1).toString().padLeft(2, '0')}';
   }
 }

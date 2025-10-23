@@ -3,8 +3,8 @@ import 'package:provider/provider.dart';
 import '../models/order_model.dart';
 import '../providers/order_provider.dart';
 import '../widgets/order_table_row.dart';
-import 'create_order_page.dart';
-import 'edit_order_page.dart';
+import '../widgets/create_order_dialog.dart'; // NUEVO
+import '../widgets/edit_order_dialog.dart'; // NUEVO
 
 class OrdersTablePage extends StatefulWidget {
   const OrdersTablePage({super.key});
@@ -24,51 +24,67 @@ class _OrdersTablePageState extends State<OrdersTablePage> {
   }
 
   void _showOrderDetails(OrderModel order) {
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      backgroundColor: Colors.grey[900],
-      title: Text(
-        'Pedido #${order.id}',
-        style: const TextStyle(color: Colors.white),
-      ),
-      content: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildDetailRow('Cliente:', order.customer),
-          _buildDetailRow('Cultivo:', order.crop),
-          _buildDetailRow('Variedad:', order.variety),
-          _buildDetailRow('Cantidad:', '${order.quantity} ${order.unit}'),
-          _buildDetailRow('Fecha Entrega:', _formatDate(order.deliveryDate)),
-          _buildDetailRow('Estado:', order.statusText),
-          // Eliminados: precio unitario, total y dirección
-          if (order.notes != null && order.notes!.isNotEmpty)
-            _buildDetailRow('Notas:', order.notes!),
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: Text(
+          'Pedido #${order.id}',
+          style: const TextStyle(color: Colors.white),
+        ),
+        content: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildDetailRow('Cliente:', order.customer),
+            _buildDetailRow('Cultivo:', order.crop),
+            _buildDetailRow('Variedad:', order.variety),
+            _buildDetailRow('Cantidad:', '${order.quantity} ${order.unit}'),
+            _buildDetailRow('Fecha Entrega:', _formatDate(order.deliveryDate)),
+            _buildDetailRow('Estado:', order.statusText),
+            if (order.notes != null && order.notes!.isNotEmpty)
+              _buildDetailRow('Notas:', order.notes!),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Cerrar',
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context); // Cerrar diálogo de detalles
+              _showEditOrderDialog(
+                  order.id); // NUEVO: Mostrar diálogo de edición
+            },
+            child: const Text(
+              'Editar',
+              style: TextStyle(color: Color(0xFF00CFC3)),
+            ),
+          ),
         ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text(
-            'Cerrar',
-            style: TextStyle(color: Colors.grey),
-          ),
-        ),
-        TextButton(
-          onPressed: () {
-            Navigator.pop(context);
-            _navigateToEditOrder(order.id);
-          },
-          child: const Text(
-            'Editar',
-            style: TextStyle(color: Color(0xFF00CFC3)),
-          ),
-        ),
-      ],
-    ),
-  );
-}
+    );
+  }
+
+  // NUEVO: Mostrar diálogo para crear pedido
+  void _showCreateOrderDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => const CreateOrderDialog(),
+    );
+  }
+
+  // NUEVO: Mostrar diálogo para editar pedido
+  void _showEditOrderDialog(String orderId) {
+    showDialog(
+      context: context,
+      builder: (context) => EditOrderDialog(orderId: orderId),
+    );
+  }
 
   Widget _buildDetailRow(String label, String value) {
     return Padding(
@@ -102,52 +118,6 @@ class _OrdersTablePageState extends State<OrdersTablePage> {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
 
-  void _navigateToCreateOrder() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const CreateOrderPage(),
-      ),
-    );
-  }
-
-  void _navigateToEditOrder(String orderId) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => EditOrderPage(orderId: orderId),
-      ),
-    );
-  }
-
-  void _showShippingAlert(OrderModel order) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: const Text(
-          'Preparar Envío',
-          style: TextStyle(color: Colors.white),
-        ),
-        content: Text(
-          'El pedido #${order.id} ha sido marcado como "Enviado". '
-          'Por favor, preparar los documentos de envío y coordinar '
-          'con el transportista.',
-          style: const TextStyle(color: Colors.white),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Entendido',
-              style: TextStyle(color: Color(0xFF00CFC3)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -177,7 +147,8 @@ class _OrdersTablePageState extends State<OrdersTablePage> {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 margin: const EdgeInsets.symmetric(horizontal: 16),
-                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
                 child: const Row(
                   children: [
                     _TableHeader(text: 'ID', flex: 1),
@@ -185,7 +156,7 @@ class _OrdersTablePageState extends State<OrdersTablePage> {
                     _TableHeader(text: 'Cultivo', flex: 1),
                     _TableHeader(text: 'Variedad', flex: 1),
                     _TableHeader(text: 'Cantidad', flex: 1),
-                    _TableHeader(text: 'Fecha Entrega', flex: 1), // NUEVA COLUMNA
+                    _TableHeader(text: 'Fecha Entrega', flex: 1),
                     _TableHeader(text: 'Estado', flex: 1),
                   ],
                 ),
@@ -203,7 +174,8 @@ class _OrdersTablePageState extends State<OrdersTablePage> {
                         ? const Center(
                             child: Text(
                               'No hay pedidos registrados',
-                              style: TextStyle(color: Colors.white, fontSize: 18),
+                              style:
+                                  TextStyle(color: Colors.white, fontSize: 18),
                             ),
                           )
                         : ListView.builder(
@@ -218,15 +190,16 @@ class _OrdersTablePageState extends State<OrdersTablePage> {
                           ),
               ),
 
-              // Add Button
+              // Add Button - ACTUALIZADO: Ahora abre diálogo
               Container(
                 margin: const EdgeInsets.all(24),
                 child: ElevatedButton(
-                  onPressed: _navigateToCreateOrder,
+                  onPressed: _showCreateOrderDialog, // NUEVO: Usar diálogo
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF00CFC3),
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 32, vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),

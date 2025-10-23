@@ -4,14 +4,14 @@ import '../models/order_model.dart';
 import '../providers/order_provider.dart';
 import '../validators/order_validator.dart';
 
-class CreateOrderPage extends StatefulWidget {
-  const CreateOrderPage({super.key});
+class CreateOrderDialog extends StatefulWidget {
+  const CreateOrderDialog({super.key});
 
   @override
-  State<CreateOrderPage> createState() => _CreateOrderPageState();
+  State<CreateOrderDialog> createState() => _CreateOrderDialogState();
 }
 
-class _CreateOrderPageState extends State<CreateOrderPage> {
+class _CreateOrderDialogState extends State<CreateOrderDialog> {
   final _formKey = GlobalKey<FormState>();
 
   final _customerController = TextEditingController();
@@ -112,7 +112,6 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
   }
 
   String _generateOrderId() {
-    // Usar el método del provider para generar el ID
     final provider = context.read<OrderProvider>();
     return provider.generateNextOrderId();
   }
@@ -152,47 +151,65 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return Dialog(
       backgroundColor: const Color(0xFF0F1C2E),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF0F1C2E),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: _cancel,
-        ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Título
-            const Text(
-              'Nuevo pedido',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
+      insetPadding: const EdgeInsets.symmetric(
+          horizontal: 20, vertical: 40), // NUEVO: Padding reducido
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(
+          maxWidth: 500, // NUEVO: Ancho máximo reducido
+          maxHeight: 600, // NUEVO: Alto máximo reducido
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20), // NUEVO: Padding interno reducido
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header con título y botón cerrar
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Nuevo pedido',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20, // NUEVO: Tamaño de fuente reducido
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close,
+                        color: Colors.white,
+                        size: 20), // NUEVO: Icono más pequeño
+                    onPressed: _cancel,
+                    padding: EdgeInsets.zero, // NUEVO: Sin padding
+                    constraints:
+                        const BoxConstraints(), // NUEVO: Sin constraints
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 8),
+              const SizedBox(height: 8),
 
-            // Lista de campos
-            const SizedBox(height: 32),
-            _buildFieldList(),
-            const SizedBox(height: 32),
+              // Lista de campos
+              _buildFieldList(),
+              const SizedBox(height: 16),
 
-            // Línea divisoria
-            Container(
-              height: 1,
-              color: Colors.grey[700],
-              margin: const EdgeInsets.symmetric(vertical: 24),
-            ),
+              // Línea divisoria
+              Container(
+                height: 1,
+                color: Colors.grey[700],
+                margin: const EdgeInsets.symmetric(
+                    vertical: 12), // NUEVO: Margen reducido
+              ),
 
-            // Botones
-            _buildActionButtons(),
-          ],
+              // Botones
+              _buildActionButtons(),
+            ],
+          ),
         ),
       ),
     );
@@ -209,7 +226,7 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
             label: 'Cliente',
             validator: OrderValidator.validateCustomer,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 12), // NUEVO: Espaciado reducido
 
           // Variedad de cultivo
           _buildListField(
@@ -217,7 +234,7 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
             label: 'Variedad de cultivo',
             validator: OrderValidator.validateCrop,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 12), // NUEVO: Espaciado reducido
 
           // Variedad de plantulas
           _buildListField(
@@ -225,7 +242,7 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
             label: 'Variedad de plantulas',
             validator: OrderValidator.validateVariety,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 12), // NUEVO: Espaciado reducido
 
           // Cantidad
           _buildListField(
@@ -234,11 +251,11 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
             keyboardType: TextInputType.number,
             validator: OrderValidator.validateQuantity,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 12), // NUEVO: Espaciado reducido
 
           // Fecha de entrega
           _buildDateField(),
-          const SizedBox(height: 20),
+          const SizedBox(height: 12), // NUEVO: Espaciado reducido
 
           // Estado
           _buildStatusField(),
@@ -262,9 +279,10 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
           children: [
             // Bullet point
             Container(
-              margin: const EdgeInsets.only(top: 8, right: 12),
-              width: 6,
-              height: 6,
+              margin: const EdgeInsets.only(
+                  top: 6, right: 8), // NUEVO: Margen reducido
+              width: 5, // NUEVO: Tamaño reducido
+              height: 5, // NUEVO: Tamaño reducido
               decoration: const BoxDecoration(
                 color: Color(0xFF00CFC3),
                 shape: BoxShape.circle,
@@ -275,31 +293,35 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
               label,
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 16,
+                fontSize: 14, // NUEVO: Tamaño de fuente reducido
                 fontWeight: FontWeight.w500,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6), // NUEVO: Espaciado reducido
 
         // Campo de texto
         TextFormField(
           controller: controller,
           keyboardType: keyboardType,
-          style: const TextStyle(color: Colors.white),
+          style: const TextStyle(
+              color: Colors.white, fontSize: 14), // NUEVO: Fuente reducida
           decoration: InputDecoration(
             filled: true,
             fillColor: Colors.grey[800],
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius:
+                  BorderRadius.circular(6), // NUEVO: Border radius reducido
               borderSide: BorderSide.none,
             ),
             contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 12,
+              horizontal: 12, // NUEVO: Padding reducido
+              vertical: 10, // NUEVO: Padding reducido
             ),
-            errorStyle: const TextStyle(color: Colors.red),
+            errorStyle: const TextStyle(
+                color: Colors.red,
+                fontSize: 11), // NUEVO: Fuente de error reducida
           ),
           validator: validator,
         ),
@@ -317,9 +339,10 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
           children: [
             // Bullet point
             Container(
-              margin: const EdgeInsets.only(top: 8, right: 12),
-              width: 6,
-              height: 6,
+              margin: const EdgeInsets.only(
+                  top: 6, right: 8), // NUEVO: Margen reducido
+              width: 5, // NUEVO: Tamaño reducido
+              height: 5, // NUEVO: Tamaño reducido
               decoration: const BoxDecoration(
                 color: Color(0xFF00CFC3),
                 shape: BoxShape.circle,
@@ -330,23 +353,24 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
               'Fecha de entrega',
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 16,
+                fontSize: 14, // NUEVO: Tamaño de fuente reducido
                 fontWeight: FontWeight.w500,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6), // NUEVO: Espaciado reducido
 
         // Selector de fecha
         InkWell(
           onTap: () => _selectDate(context),
           child: Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12), // NUEVO: Padding reducido
             decoration: BoxDecoration(
               color: Colors.grey[800],
-              borderRadius: BorderRadius.circular(8),
+              borderRadius:
+                  BorderRadius.circular(6), // NUEVO: Border radius reducido
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -355,13 +379,13 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
                   '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 16,
+                    fontSize: 14, // NUEVO: Fuente reducida
                   ),
                 ),
                 const Icon(
                   Icons.calendar_today,
                   color: Color(0xFF00CFC3),
-                  size: 20,
+                  size: 18, // NUEVO: Icono más pequeño
                 ),
               ],
             ),
@@ -376,7 +400,7 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
               OrderValidator.validateDeliveryDate(_selectedDate)!,
               style: const TextStyle(
                 color: Colors.red,
-                fontSize: 12,
+                fontSize: 11, // NUEVO: Fuente reducida
               ),
             ),
           ),
@@ -394,9 +418,10 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
           children: [
             // Bullet point
             Container(
-              margin: const EdgeInsets.only(top: 8, right: 12),
-              width: 6,
-              height: 6,
+              margin: const EdgeInsets.only(
+                  top: 6, right: 8), // NUEVO: Margen reducido
+              width: 5, // NUEVO: Tamaño reducido
+              height: 5, // NUEVO: Tamaño reducido
               decoration: const BoxDecoration(
                 color: Color(0xFF00CFC3),
                 shape: BoxShape.circle,
@@ -407,21 +432,23 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
               'Estado',
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 16,
+                fontSize: 14, // NUEVO: Tamaño de fuente reducido
                 fontWeight: FontWeight.w500,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6), // NUEVO: Espaciado reducido
 
         // Dropdown de estado
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(
+              horizontal: 12), // NUEVO: Padding reducido
           decoration: BoxDecoration(
             color: Colors.grey[800],
-            borderRadius: BorderRadius.circular(8),
+            borderRadius:
+                BorderRadius.circular(6), // NUEVO: Border radius reducido
           ),
           child: DropdownButton<OrderStatus>(
             value: _selectedStatus,
@@ -435,13 +462,16 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
             dropdownColor: Colors.grey[800],
             underline: const SizedBox(),
             isExpanded: true,
-            style: const TextStyle(color: Colors.white),
+            style: const TextStyle(
+                color: Colors.white, fontSize: 14), // NUEVO: Fuente reducida
             items: OrderStatus.values.map((OrderStatus status) {
               return DropdownMenuItem<OrderStatus>(
                 value: status,
                 child: Text(
                   _getStatusText(status),
-                  style: const TextStyle(color: Colors.white),
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14), // NUEVO: Fuente reducida
                 ),
               );
             }).toList(),
@@ -472,45 +502,47 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
         // Botón Cancelar
         Expanded(
           child: SizedBox(
-            height: 50,
+            height: 42, // NUEVO: Altura reducida
             child: OutlinedButton(
               onPressed: _loading ? null : _cancel,
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: Colors.grey),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius:
+                      BorderRadius.circular(6), // NUEVO: Border radius reducido
                 ),
               ),
               child: const Text(
                 'Cancelar',
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 16,
+                  fontSize: 14, // NUEVO: Fuente reducida
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ),
           ),
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: 12), // NUEVO: Espaciado reducido
 
         // Botón Ingresar
         Expanded(
           child: SizedBox(
-            height: 50,
+            height: 42, // NUEVO: Altura reducida
             child: ElevatedButton(
               onPressed: _loading ? null : _submitForm,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF00CFC3),
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius:
+                      BorderRadius.circular(6), // NUEVO: Border radius reducido
                 ),
               ),
               child: _loading
                   ? const SizedBox(
-                      height: 20,
-                      width: 20,
+                      height: 16, // NUEVO: Tamaño reducido
+                      width: 16, // NUEVO: Tamaño reducido
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
                         color: Colors.white,
@@ -519,7 +551,7 @@ class _CreateOrderPageState extends State<CreateOrderPage> {
                   : const Text(
                       'Ingresar',
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 14, // NUEVO: Fuente reducida
                         fontWeight: FontWeight.bold,
                       ),
                     ),

@@ -5,7 +5,7 @@ import '../models/order_model.dart';
 class OrderRepository {
   Future<List<OrderModel>> getOrders() async {
     await Future.delayed(const Duration(milliseconds: 500));
-    
+
     // Solo 1 pedido de ejemplo
     final orders = [
       OrderModel(
@@ -24,7 +24,7 @@ class OrderRepository {
 
     // Ordenar por ID de forma ascendente
     orders.sort((a, b) => a.id.compareTo(b.id));
-    
+
     return orders;
   }
 
@@ -46,14 +46,15 @@ class OrderRepository {
   // Método opcional para cargar datos desde un archivo JSON
   Future<List<OrderModel>> loadOrdersFromJson() async {
     try {
-      final String response = await rootBundle.loadString('assets/mock/orders.json');
+      final String response =
+          await rootBundle.loadString('assets/mock/orders.json');
       final data = await json.decode(response) as List;
-      
+
       final orders = data.map((json) => OrderModel.fromJson(json)).toList();
-      
+
       // Ordenar por ID
       orders.sort((a, b) => a.id.compareTo(b.id));
-      
+
       return orders;
     } catch (e) {
       print('Error cargando datos desde JSON: $e');
@@ -70,44 +71,47 @@ class OrderRepository {
     DateTime? endDate,
   }) async {
     await Future.delayed(const Duration(milliseconds: 200));
-    
+
     final allOrders = await getOrders();
     var filteredOrders = allOrders;
 
     // Filtrar por cliente
     if (customer != null && customer.isNotEmpty) {
-      filteredOrders = filteredOrders.where(
-        (order) => order.customer.toLowerCase().contains(customer.toLowerCase())
-      ).toList();
+      filteredOrders = filteredOrders
+          .where((order) =>
+              order.customer.toLowerCase().contains(customer.toLowerCase()))
+          .toList();
     }
 
     // Filtrar por cultivo
     if (crop != null && crop.isNotEmpty) {
-      filteredOrders = filteredOrders.where(
-        (order) => order.crop.toLowerCase().contains(crop.toLowerCase())
-      ).toList();
+      filteredOrders = filteredOrders
+          .where(
+              (order) => order.crop.toLowerCase().contains(crop.toLowerCase()))
+          .toList();
     }
 
     // Filtrar por estado
     if (status != null) {
-      filteredOrders = filteredOrders.where(
-        (order) => order.status == status
-      ).toList();
+      filteredOrders =
+          filteredOrders.where((order) => order.status == status).toList();
     }
 
     // Filtrar por rango de fechas
     if (startDate != null) {
-      filteredOrders = filteredOrders.where(
-        (order) => order.deliveryDate.isAfter(startDate) || 
-                   order.deliveryDate.isAtSameMomentAs(startDate)
-      ).toList();
+      filteredOrders = filteredOrders
+          .where((order) =>
+              order.deliveryDate.isAfter(startDate) ||
+              order.deliveryDate.isAtSameMomentAs(startDate))
+          .toList();
     }
 
     if (endDate != null) {
-      filteredOrders = filteredOrders.where(
-        (order) => order.deliveryDate.isBefore(endDate) || 
-                   order.deliveryDate.isAtSameMomentAs(endDate)
-      ).toList();
+      filteredOrders = filteredOrders
+          .where((order) =>
+              order.deliveryDate.isBefore(endDate) ||
+              order.deliveryDate.isAtSameMomentAs(endDate))
+          .toList();
     }
 
     // Ordenar resultados por ID
@@ -119,15 +123,21 @@ class OrderRepository {
   // Método opcional para obtener estadísticas
   Future<Map<String, dynamic>> getOrderStatistics() async {
     final orders = await getOrders();
-    
-    final totalOrders = orders.length;
-    final pendingCount = orders.where((o) => o.status == OrderStatus.pending).length;
-    final inProcessCount = orders.where((o) => o.status == OrderStatus.inProcess).length;
-    final shippedCount = orders.where((o) => o.status == OrderStatus.shipped).length;
-    final deliveredCount = orders.where((o) => o.status == OrderStatus.delivered).length;
-    final cancelledCount = orders.where((o) => o.status == OrderStatus.cancelled).length;
 
-    final totalQuantity = orders.fold(0.0, (sum, order) => sum + order.quantity);
+    final totalOrders = orders.length;
+    final pendingCount =
+        orders.where((o) => o.status == OrderStatus.pending).length;
+    final inProcessCount =
+        orders.where((o) => o.status == OrderStatus.inProcess).length;
+    final shippedCount =
+        orders.where((o) => o.status == OrderStatus.shipped).length;
+    final deliveredCount =
+        orders.where((o) => o.status == OrderStatus.delivered).length;
+    final cancelledCount =
+        orders.where((o) => o.status == OrderStatus.cancelled).length;
+
+    final totalQuantity =
+        orders.fold(0.0, (sum, order) => sum + order.quantity);
 
     return {
       'totalOrders': totalOrders,
@@ -150,11 +160,11 @@ class OrderRepository {
   // Método opcional para obtener el próximo ID disponible
   Future<String> getNextOrderId() async {
     final orders = await getOrders();
-    
+
     if (orders.isEmpty) {
       return "AA01";
     }
-    
+
     // Extraer el número más alto de los IDs existentes
     int maxNumber = 0;
     for (var order in orders) {
@@ -169,7 +179,7 @@ class OrderRepository {
         }
       }
     }
-    
+
     return 'AA${(maxNumber + 1).toString().padLeft(2, '0')}';
   }
 }
