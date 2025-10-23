@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:uuid/uuid.dart';
 
-// Rutas de paquete corregidas
 import 'package:main/features/gestion_siembra/models/siembra_model.dart';
 import 'package:main/features/gestion_siembra/notifiers/siembra_notifier.dart';
 
 class SiembraFormScreen extends StatefulWidget {
-  const SiembraFormScreen({super.key});
+  // --- CAMBIO 1: Acepta una siembra opcional ---
+  final SiembraModel? siembra;
+
+  const SiembraFormScreen({super.key, this.siembra});
 
   @override
   State<SiembraFormScreen> createState() => _SiembraFormScreenState();
@@ -15,171 +17,175 @@ class SiembraFormScreen extends StatefulWidget {
 
 class _SiembraFormScreenState extends State<SiembraFormScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _loteController = TextEditingController();
-  final _especificacionController = TextEditingController();
-  final _cultivoController = TextEditingController();
 
+  // --- CAMBIO 2: Controladores declarados (no inicializados) ---
+  late TextEditingController _loteController;
+  late TextEditingController _cultivoController;
+  late TextEditingController _especificacionController;
+  late TextEditingController _tipoRiegoController;
+  late TextEditingController _responsableController;
   DateTime? _fechaSeleccionada;
-  String? _riegoSeleccionado;
 
-  // Datos de ejemplo para los menús desplegables
-
-  final List<String> _tiposRiego = ['Aspersión', 'Manual'];
-  final _responsableController = TextEditingController();
+  bool _isEditMode = false;
 
   @override
-  void dispose() {
-    _loteController.dispose();
-    _especificacionController.dispose();
-    _responsableController.dispose();
-    _cultivoController.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+
+    // --- CAMBIO 3: Lógica para pre-llenar los campos ---
+    if (widget.siembra != null) {
+      // MODO EDICIÓN: Llenamos los campos con los datos existentes.
+      _isEditMode = true;
+      _loteController = TextEditingController(text: widget.siembra!.lote);
+      _cultivoController = TextEditingController(text: widget.siembra!.cultivo);
+      _especificacionController = TextEditingController(
+        text: widget.siembra!.especificacion,
+      );
+      _tipoRiegoController = TextEditingController(
+        text: widget.siembra!.tipoRiego,
+      );
+      _responsableController = TextEditingController(
+        text: widget.siembra!.responsable,
+      );
+      _fechaSeleccionada = widget.siembra!.fechaSiembra;
+    } else {
+      // MODO CREACIÓN: Los campos empiezan vacíos.
+      _isEditMode = false;
+      _loteController = TextEditingController();
+      _cultivoController = TextEditingController();
+      _especificacionController = TextEditingController();
+      _tipoRiegoController = TextEditingController();
+      _responsableController = TextEditingController();
+    }
   }
 
-  void _submitForm() async {
-    if (_formKey.currentState!.validate()) {
-      final nuevaSiembra = SiembraModel(
-        id: '',
-        lote: _loteController.text,
-        cultivo: _cultivoController.text,
-        fechaSiembra: _fechaSeleccionada!,
-        especificacion: _especificacionController.text,
-        tipoRiego: _riegoSeleccionado!,
-        responsable: _responsableController.text,
-        timeline: [],
+  // --- CAMBIO 4: Lógica de guardado unificada ---
+  void _guardarFormulario() {
+    // Validamos el formulario
+    if (!_formKey.currentState!.validate() || _fechaSeleccionada == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Por favor, completa todos los campos obligatorios.'),
+        ),
       );
+      return;
+    }
 
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(child: CircularProgressIndicator()),
-      );
+    final notifier = Provider.of<SiembraNotifier>(context, listen: false);
 
-      await Provider.of<SiembraNotifier>(
-        context,
-        listen: false,
-      ).addSiembra(nuevaSiembra);
+    // Creamos el modelo con los datos del formulario
+    final siembraGuardada = SiembraModel(
+      // Si editamos, re-usamos el ID. Si creamos, generamos uno nuevo.
+      id: _isEditMode ? widget.siembra!.id : const Uuid().v4(),
+      lote: _loteController.text,
+      cultivo: _cultivoController.text,
+      fechaSiembra: _fechaSeleccionada!,
+      especificacion: _especificacionController.text,
+      tipoRiego: _tipoRiegoController.text,
+      responsable: _responsableController.text,
+      // Si editamos, conservamos el timeline. Si creamos, lo dejamos vacío.
+      timeline: _isEditMode ? widget.siembra!.timeline : [],
+    );
 
-      if (mounted) {
-        Navigator.pop(context); // Cierra el diálogo de carga
-        Navigator.pop(context); // Cierra el formulario
-      }
+    // Llamamos a la función correspondiente del notifier
+    if (_isEditMode) {
+      notifier.actualizarSiembra(siembraGuardada);
+    } else {
+      notifier.addSiembra(siembraGuardada);
+    }
+
+    Navigator.of(context).pop(); // Cerramos el formulario
+  }
+
+  Future<void> _seleccionarFecha() async {
+    final fecha = await showDatePicker(
+      context: context,
+      initialDate: _fechaSeleccionada ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+    if (fecha != null) {
+      setState(() {
+        _fechaSeleccionada = fecha;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Nueva Siembra')),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16.0),
-          children: [
-            TextFormField(
-              controller: _loteController,
-              decoration: const InputDecoration(
-                labelText: 'Lote',
-                border: OutlineInputBorder(),
+      appBar: AppBar(
+        // --- CAMBIO 5: Título dinámico ---
+        title: Text(_isEditMode ? 'Editar Siembra' : 'Agregar Siembra'),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextFormField(
+                controller: _loteController, // El controlador ya tiene el valor
+                decoration: const InputDecoration(labelText: 'Lote *'),
+                validator: (v) =>
+                    (v == null || v.isEmpty) ? 'Campo obligatorio' : null,
               ),
-              validator: (value) => (value == null || value.isEmpty)
-                  ? 'El lote es obligatorio'
-                  : null,
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _cultivoController,
-              decoration: const InputDecoration(
-                labelText: 'Cultivo',
-                border: OutlineInputBorder(),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller:
+                    _cultivoController, // El controlador ya tiene el valor
+                decoration: const InputDecoration(labelText: 'Cultivo *'),
+                validator: (v) =>
+                    (v == null || v.isEmpty) ? 'Campo obligatorio' : null,
               ),
-              textCapitalization: TextCapitalization
-                  .sentences, // Pone en mayúscula la primera letra
-              validator: (value) => (value == null || value.isEmpty)
-                  ? 'El cultivo es obligatorio'
-                  : null,
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _especificacionController,
-              decoration: const InputDecoration(
-                labelText: 'Especificación',
-                border: OutlineInputBorder(),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller:
+                    _especificacionController, // El controlador ya tiene el valor
+                decoration: const InputDecoration(labelText: 'Especificación'),
               ),
-              keyboardType: TextInputType.text,
-              textCapitalization: TextCapitalization.sentences,
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'La especificación es obligatoria';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              readOnly: true,
-              decoration: InputDecoration(
-                labelText: 'Fecha de Siembra',
-                border: const OutlineInputBorder(),
-                suffixIcon: const Icon(Icons.calendar_today),
-                hintText: _fechaSeleccionada == null
-                    ? 'Seleccione una fecha'
-                    : DateFormat('dd/MM/yyyy').format(_fechaSeleccionada!),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller:
+                    _tipoRiegoController, // El controlador ya tiene el valor
+                decoration: const InputDecoration(labelText: 'Tipo de Riego'),
               ),
-              onTap: () async {
-                final fecha = await showDatePicker(
-                  context: context,
-                  initialDate: DateTime.now(),
-                  firstDate: DateTime(2020),
-                  lastDate: DateTime.now(),
-                );
-                if (fecha != null) {
-                  setState(() => _fechaSeleccionada = fecha);
-                }
-              },
-              validator: (value) =>
-                  _fechaSeleccionada == null ? 'La fecha es obligatoria' : null,
-            ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              value: _riegoSeleccionado,
-              decoration: const InputDecoration(
-                labelText: 'Tipo de Riego',
-                border: OutlineInputBorder(),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller:
+                    _responsableController, // El controlador ya tiene el valor
+                decoration: const InputDecoration(labelText: 'Responsable'),
               ),
-              items: _tiposRiego
-                  .map(
-                    (riego) =>
-                        DropdownMenuItem(value: riego, child: Text(riego)),
-                  )
-                  .toList(),
-              onChanged: (value) => setState(() => _riegoSeleccionado = value),
-              validator: (value) =>
-                  value == null ? 'Seleccione un tipo de riego' : null,
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller:
-                  _responsableController, // Usa el controlador que creamos
-              decoration: const InputDecoration(
-                labelText: 'Responsable',
-                border: OutlineInputBorder(),
+              const SizedBox(height: 20),
+              // Campo de fecha (también se pre-llena)
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      _fechaSeleccionada == null
+                          ? 'Fecha de siembra *'
+                          : 'Fecha: ${_fechaSeleccionada!.day}/${_fechaSeleccionada!.month}/${_fechaSeleccionada!.year}',
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: _seleccionarFecha,
+                    child: Text(_isEditMode ? 'Cambiar' : 'Seleccionar'),
+                  ),
+                ],
               ),
-              textCapitalization: TextCapitalization
-                  .words, // Para que ponga mayúsculas en los nombres
-              validator: (value) => (value == null || value.isEmpty)
-                  ? 'Asigne un responsable'
-                  : null,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: _submitForm,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
+              const SizedBox(height: 30),
+              ElevatedButton.icon(
+                onPressed: _guardarFormulario,
+                icon: const Icon(Icons.save),
+                // --- CAMBIO 6: Texto del botón dinámico ---
+                label: Text(
+                  _isEditMode ? 'Guardar Cambios' : 'Guardar Siembra',
+                ),
               ),
-              child: const Text('Guardar Siembra'),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

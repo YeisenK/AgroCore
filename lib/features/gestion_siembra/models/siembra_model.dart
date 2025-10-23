@@ -1,6 +1,6 @@
-// --- Entidad Principal: SiembraModel ---
-// Define la estructura de datos para una siembra.
+/// Define la estructura de datos para una siembra.
 class SiembraModel {
+  /// El ID único de la siembra, como String.
   final String id;
   final String lote;
   final String cultivo;
@@ -8,10 +8,8 @@ class SiembraModel {
   final String especificacion;
   final String tipoRiego;
   final String responsable;
-  final List<TimelineEvent>
-  timeline; // Lista de eventos para la línea de tiempo
+  final List<TimelineEvent> timeline;
 
-  // Constructor para crear un objeto SiembraModel en el código
   SiembraModel({
     required this.id,
     required this.lote,
@@ -20,23 +18,19 @@ class SiembraModel {
     required this.especificacion,
     required this.tipoRiego,
     required this.responsable,
-    this.timeline = const [], // Por defecto, la lista de eventos está vacía
+    this.timeline = const [],
   });
 
-  /// factory SiembraModel.fromJson
-  ///
-  /// Este constructor especial "traduce" un mapa de datos (que viene de un JSON)
-  /// a un objeto SiembraModel que nuestra aplicación puede entender.
+  /// Constructor factory que crea una instancia de SiembraModel a partir de un mapa JSON.
   factory SiembraModel.fromJson(Map<String, dynamic> json) {
     return SiembraModel(
-      id: json['id'] ?? '',
+      id: json['id'].toString(),
       lote: json['lote'] ?? 'Sin Lote',
       cultivo: json['cultivo'] ?? 'Sin Cultivo',
       fechaSiembra: DateTime.parse(json['fechaSiembra']),
       especificacion: json['especificacion'] ?? 'Sin especificación',
       tipoRiego: json['tipoRiego'] ?? 'No especificado',
       responsable: json['responsable'] ?? 'No asignado',
-      // Si el JSON tuviera un timeline, aquí lo leeríamos
       timeline:
           (json['timeline'] as List<dynamic>?)
               ?.map((eventJson) => TimelineEvent.fromJson(eventJson))
@@ -45,6 +39,8 @@ class SiembraModel {
     );
   }
 
+  /// Método que convierte el objeto SiembraModel a un mapa JSON.
+  /// ESTA ES LA FUNCIÓN QUE TE FALTA Y CAUSA EL ERROR.
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -59,8 +55,7 @@ class SiembraModel {
   }
 }
 
-// --- Sub-Entidad: TimelineEvent ---
-// Define la estructura de cada evento en la línea de tiempo de una siembra.
+/// Define la estructura para eventos en la línea de tiempo.
 class TimelineEvent {
   final String titulo;
   final String descripcion;

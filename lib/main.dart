@@ -23,12 +23,47 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'Gestión de Vivero',
         debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
+        themeMode: ThemeMode.dark,
+
+        // 2. Definimos cómo se ve nuestro tema oscuro
+        darkTheme: ThemeData(
+          brightness: Brightness.dark, // Importante para el modo oscuro
           useMaterial3: true,
+
+          // Fondo de la app (scaffold)
+          scaffoldBackgroundColor: Colors.black,
+
+          // Paleta de colores basada en azul
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.blue,
+            brightness: Brightness.dark,
+          ),
+
+          // Apariencia del AppBar
+          appBarTheme: const AppBarTheme(
+            backgroundColor: Colors.black, // Fondo del AppBar
+            foregroundColor: Colors.blue, // Título (letras) del AppBar
+          ),
+
+          // Apariencia del texto
+          textTheme: const TextTheme(
+            // Para el título del ListTile (ej: "Lote A-101")
+            titleMedium: TextStyle(
+              color: Colors.blue,
+              fontWeight: FontWeight.bold,
+            ),
+            // Para el subtítulo (ej: "Maíz")
+            bodyMedium: TextStyle(color: Colors.blue),
+            // Para el texto pequeño (ej: la fecha)
+            bodySmall: TextStyle(color: Colors.blue),
+          ),
         ),
+
+        // 3. Le decimos cuál es la pantalla de inicio
+
+        // 4. Le decimos cómo manejar las rutas (esto ya lo tenías)
+        onGenerateRoute: AppRoutes.onGenerateRoute,
         initialRoute: AppRoutes.siembraList,
-        onGenerateRoute: AppRoutes.generateRoute,
       ),
     );
   }

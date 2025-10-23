@@ -13,14 +13,10 @@ class SiembraListScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<SiembraNotifier>(
       builder: (context, notifier, child) {
-        print(
-          '🎨 [UI] El Consumer se reconstruyó. Cargando: ${notifier.isLoading}, Items: ${notifier.siembras.length}',
-        );
         return Scaffold(
           appBar: AppBar(
             title: const Text('Gestión de Siembras'),
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            foregroundColor: Theme.of(context).colorScheme.onPrimary,
+            // ... (resto de tu AppBar) ...
           ),
           body: notifier.isLoading
               ? const Center(child: CircularProgressIndicator())
@@ -29,11 +25,14 @@ class SiembraListScreen extends StatelessWidget {
                   itemCount: notifier.siembras.length,
                   itemBuilder: (context, index) {
                     final siembra = notifier.siembras[index];
-                    return _SiembraCard(siembra: siembra);
+                    return _SiembraCard(
+                      siembra: siembra,
+                    ); // Tu widget _SiembraCard
                   },
                 ),
           floatingActionButton: FloatingActionButton(
             onPressed: () {
+              // Navega al formulario en MODO CREACIÓN (sin argumentos)
               Navigator.pushNamed(context, AppRoutes.siembraForm);
             },
             child: const Icon(Icons.add),
@@ -48,33 +47,69 @@ class _SiembraCard extends StatelessWidget {
   final SiembraModel siembra;
   const _SiembraCard({required this.siembra});
 
+  Future<void> _mostrarDialogoConfirmacion(
+    BuildContext context,
+    SiembraNotifier notifier,
+  ) async {
+    // ... (Tu código de diálogo de eliminación aquí) ...
+  }
+
+  // --- CAMBIO CONFIRMADO: Esta es la navegación de edición ---
+  void _navegarAEditar(BuildContext context) {
+    // Navega al formulario en MODO EDICIÓN
+    Navigator.pushNamed(
+      context,
+      AppRoutes.siembraForm,
+      arguments: siembra, // ¡Aquí se pasa la siembra que se va a editar!
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
+    final notifier = Provider.of<SiembraNotifier>(context, listen: false);
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: colorScheme.secondaryContainer,
-          child: Icon(
-            Icons.eco_rounded,
-            color: colorScheme.onSecondaryContainer,
-          ),
+          // ... (tu leading) ...
         ),
         title: Text(siembra.lote, style: textTheme.titleMedium),
         subtitle: Text(
-          '${siembra.cultivo} - ${siembra.especificacion}\nResponsable: ${siembra.responsable}',
+          '${siembra.cultivo}\nFecha: ${DateFormat('dd MMM yyyy', 'es_MX').format(siembra.fechaSiembra)}',
           style: textTheme.bodyMedium?.copyWith(
             color: colorScheme.onSurfaceVariant,
           ),
         ),
-        trailing: Text(
-          DateFormat('dd MMM yyyy', 'es_MX').format(siembra.fechaSiembra),
-          style: textTheme.bodySmall,
-        ),
         isThreeLine: true,
+        trailing: PopupMenuButton<String>(
+          icon: const Icon(Icons.more_vert),
+          onSelected: (String result) {
+            if (result == 'editar') {
+              _navegarAEditar(context); // Llama a la navegación de edición
+            } else if (result == 'eliminar') {
+              _mostrarDialogoConfirmacion(context, notifier);
+            }
+          },
+          itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+            const PopupMenuItem(
+              value: 'editar',
+              child: ListTile(
+                leading: Icon(Icons.edit_outlined),
+                title: Text('Editar'),
+              ),
+            ),
+            const PopupMenuItem(
+              value: 'eliminar',
+              child: ListTile(
+                leading: Icon(Icons.delete_outline),
+                title: Text('Eliminar'),
+              ),
+            ),
+          ],
+        ),
         onTap: () {
           Navigator.pushNamed(
             context,

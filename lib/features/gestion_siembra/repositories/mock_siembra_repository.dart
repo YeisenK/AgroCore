@@ -1,80 +1,70 @@
 import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle;
-import 'package:uuid/uuid.dart';
 
-// Importamos el modelo de datos con el que vamos a trabajar
+// Asegúrate de que las rutas a tu modelo sean correctas
 import 'package:main/features/gestion_siembra/models/siembra_model.dart';
 
 class MockSiembraRepository {
-  // Caché para guardar los datos en memoria una vez leídos del JSON.
-  // Así no tenemos que leer el archivo del disco cada vez.
   List<SiembraModel>? _cachedSiembras;
 
-  // Instancia del generador de IDs únicos.
-  final _uuid = const Uuid();
-
-  /// Obtiene la lista de siembras.
-  /// La primera vez las lee del archivo JSON, las siguientes veces las devuelve de la memoria (caché).
   Future<List<SiembraModel>> getSiembras() async {
-    // Simula la latencia de una petición a una API o base de datos.
     await Future.delayed(const Duration(seconds: 1));
 
-    // Si ya tenemos los datos en caché, los devolvemos directamente.
     if (_cachedSiembras != null) {
-      return _cachedSiembras!;
+      // --- CAMBIO CLAVE 1: Devuelve una COPIA de la lista ---
+      return List<SiembraModel>.from(_cachedSiembras!);
     }
 
-    // Si no están en caché, los leemos del archivo JSON.
-    final jsonString = await rootBundle.loadString('assets/mock/siembras.json');
-    final List<dynamic> jsonList = json.decode(jsonString);
-    print(
-      '📦 [REPOSITORIO] JSON decodificado. Número de elementos: ${jsonList.length}',
-    );
-    // Convertimos la lista de mapas JSON a una lista de SiembraModel.
-
-    // Guardamos los datos leídos en nuestra caché para futuras peticiones.
-    _cachedSiembras = jsonList
-        .map((json) => SiembraModel.fromJson(json))
-        .toList();
-
-    if (_cachedSiembras!.isNotEmpty) {
-      print(
-        '✅ [REPOSITORIO] Modelos parseados. Primer lote: ${_cachedSiembras!.first.lote}',
+    try {
+      final jsonString = await rootBundle.loadString(
+        'assets/mock/siembras.json',
       );
-    }
+      final List<dynamic> jsonList = json.decode(jsonString);
 
-    return _cachedSiembras!;
+      _cachedSiembras = jsonList
+          .map((json) => SiembraModel.fromJson(json))
+          .toList();
+
+      // --- CAMBIO CLAVE 2: Devuelve una COPIA de la lista ---
+      return List<SiembraModel>.from(_cachedSiembras!);
+    } catch (e) {
+      print('Error al leer el mock de siembras: $e');
+      _cachedSiembras = []; // Inicializa la lista vacía en caso de error
+      return [];
+    }
   }
 
-  /// Añade una nueva siembra a nuestra lista en memoria.
   Future<void> addSiembra(SiembraModel siembra) async {
-    // Simula el tiempo que tardaría en guardar en una base de datos.
     await Future.delayed(const Duration(milliseconds: 500));
-
-    // Si la caché no ha sido inicializada, la cargamos primero.
     if (_cachedSiembras == null) {
       await getSiembras();
     }
 
-    // Creamos una nueva instancia de la siembra con un ID único y un evento inicial en el timeline.
-    final nuevaSiembraConId = SiembraModel(
-      id: _uuid.v4(), // Generamos un ID único y aleatorio
-      lote: siembra.lote,
-      cultivo: siembra.cultivo,
-      fechaSiembra: siembra.fechaSiembra,
-      especificacion: siembra.especificacion,
-      tipoRiego: siembra.tipoRiego,
-      responsable: siembra.responsable,
-      timeline: [
-        TimelineEvent(
-          titulo: 'Siembra Iniciada',
-          descripcion: 'Lote creado en el sistema.',
-          fecha: siembra.fechaSiembra,
-        ),
-      ],
-    );
+    // El repositorio solo añade la siembra que ya viene con ID desde el formulario.
+    _cachedSiembras!.add(siembra);
+    print('REPOSITORIO: Siembra añadida al caché.');
+  }
 
-    // Añadimos la nueva siembra a nuestra lista en memoria.
-    _cachedSiembras!.add(nuevaSiembraConId);
+  Future<void> actualizarSiembra(SiembraModel siembra) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    if (_cachedSiembras == null) {
+      await getSiembras();
+    }
+
+    final index = _cachedSiembras!.indexWhere((s) => s.id == siembra.id);
+    if (index != -1) {
+      _cachedSiembras![index] = siembra;
+      print('REPOSITORIO: Siembra actualizada en caché.');
+    }
+  }
+
+  Future<void> eliminarSiembra(String id) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    if (_cachedSiembras == null) {
+      await getSiembras();
+    }
+
+    _cachedSiembras!.removeWhere((s) => s.id == id);
+    print('REPOSITORIO: Siembra eliminada del caché.');
   }
 }
