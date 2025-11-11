@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+// Asegúrate de que las rutas sean correctas
 import 'package:main/features/gestion_siembra/models/siembra_model.dart';
 import 'package:main/features/gestion_siembra/repositories/mock_siembra_repository.dart';
 
@@ -16,6 +17,24 @@ class SiembraNotifier extends ChangeNotifier {
   bool get isLoading => _isLoading;
   List<SiembraModel> get siembras => _siembras;
 
+  // --- MÉTODO NUEVO PARA REVISAR DUPLICADOS ---
+  /// Revisa si un número de lote ya existe en la lista.
+  /// Opcionalmente ignora un ID (necesario para el modo de edición).
+  bool checkLoteExists(int lote, {String? siembraIdToIgnore}) {
+    return _siembras.any((siembra) {
+      // Condición 1: ¿Es el mismo número de lote?
+      final bool isSameLote = siembra.lote == lote;
+
+      // Condición 2: ¿Es un item DIFERENTE al que estamos editando?
+      final bool isDifferentItem = siembra.id != siembraIdToIgnore;
+
+      // Es un duplicado si es el mismo lote Y un item diferente
+      return isSameLote && isDifferentItem;
+    });
+  }
+  // --- FIN DEL MÉTODO NUEVO ---
+
+  /// READ: Carga la lista inicial de siembras.
   Future<void> fetchSiembras() async {
     _isLoading = true;
     notifyListeners();
@@ -29,56 +48,40 @@ class SiembraNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// CREATE: Añade una nueva siembra (Actualización Optimista).
   Future<void> addSiembra(SiembraModel nuevaSiembra) async {
     try {
-      // 1. Le decimos al repositorio que guarde el cambio permanentemente.
-      //    No usamos 'await' para que la UI sea instantánea.
-      _repository.addSiembra(nuevaSiembra);
-
-      // 2. ACTUALIZACIÓN OPTIMISTA: Añadimos la siembra a nuestra lista local.
-      _siembras.add(nuevaSiembra);
-
-      // 3. Notificamos a la UI de inmediato.
-      notifyListeners();
-      print('NOTIFIER: Siembra añadida localmente y notificado.');
-
-      // 4. NO HAY "fetchSiembras()". Esto evita el duplicado.
+      _repository.addSiembra(nuevaSiembra); // Llama al repo (sin await)
+      _siembras.add(nuevaSiembra); // Añade a la lista local
+      notifyListeners(); // Notifica a la UI
     } catch (e) {
       print('Error al añadir la siembra: $e');
     }
   }
 
+  /// UPDATE: Actualiza una siembra existente (Actualización Optimista).
   Future<void> actualizarSiembra(SiembraModel siembraActualizada) async {
     try {
-      // 1. Le decimos al repositorio que guarde el cambio.
-      _repository.actualizarSiembra(siembraActualizada);
+      _repository.actualizarSiembra(
+        siembraActualizada,
+      ); // Llama al repo (sin await)
 
-      // 2. ACTUALIZACIÓN OPTIMISTA: Actualizamos nuestra lista local.
       final index = _siembras.indexWhere((s) => s.id == siembraActualizada.id);
       if (index != -1) {
-        _siembras[index] = siembraActualizada;
-        // 3. Notificamos a la UI.
-        notifyListeners();
-        print('NOTIFIER: Siembra actualizada localmente y notificado.');
+        _siembras[index] = siembraActualizada; // Actualiza lista local
+        notifyListeners(); // Notifica a la UI
       }
     } catch (e) {
       print('Error al actualizar la siembra: $e');
     }
   }
 
+  /// DELETE: Elimina una siembra (Actualización Optimista).
   Future<void> eliminarSiembra(String id) async {
     try {
-      // 1. Le decimos al repositorio que elimine el dato.
-      _repository.eliminarSiembra(id);
-
-      // 2. ACTUALIZACIÓN OPTIMISTA: Eliminamos de nuestra lista local.
-      _siembras.removeWhere((s) => s.id == id);
-
-      // 3. Notificamos a la UI de inmediato.
-      notifyListeners();
-      print('NOTIFIER: Siembra eliminada localmente y notificado.');
-
-      // 4. NO HAY "fetchSiembras()". Esto soluciona el bug de borrado.
+      _repository.eliminarSiembra(id); // Llama al repo (sin await)
+      _siembras.removeWhere((s) => s.id == id); // Elimina de lista local
+      notifyListeners(); // Notifica a la UI
     } catch (e) {
       print('Error al eliminar la siembra: $e');
     }
