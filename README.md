@@ -131,8 +131,8 @@ flutter run
 
 ## Roadmap
 
-- [ ] Integrar sensores reales  
+- ✅ Integrar sensores reales  
 - [ ] Notificaciones push  
-- [ ] Reportes en PDF/Excel  
+- ✅ Reportes en PDF/Excel  
 - [ ] Conexión con Odoo  
 - [ ] IA para predicciones  
