@@ -23,7 +23,7 @@ class Routes {
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
       case siembraList:
-        return MaterialPageRoute(builder: (_) => const SiembraListScreen());
+        return MaterialPageRoute(builder: (_) => SiembraListScreen());
 
       case siembraDetail:
         final siembra = settings.arguments as SiembraModel;
@@ -38,7 +38,7 @@ class Routes {
         );
 
       default:
-        return MaterialPageRoute(builder: (_) => const SiembraListScreen());
+        return MaterialPageRoute(builder: (_) => SiembraListScreen());
     }
   }
 }

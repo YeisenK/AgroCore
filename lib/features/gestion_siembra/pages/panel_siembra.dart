@@ -40,6 +40,11 @@ class PanelSiembra extends StatelessWidget {
             bodyMedium: TextStyle(color: Colors.blue),
             bodySmall: TextStyle(color: Colors.blue),
           ),
+
+          // Agregar estilo para el Drawer del AppShell
+          drawerTheme: const DrawerThemeData(
+            backgroundColor: Colors.black,
+          ),
         ),
 
         onGenerateRoute: Routes.onGenerateRoute,

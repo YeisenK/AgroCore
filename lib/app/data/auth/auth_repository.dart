@@ -51,6 +51,10 @@ class AuthRepository {
       rethrow;
     }
 
+    Future<String?> getCurrentToken() async {
+    return await getStoredAccessToken();
+  }
+
     if (r.statusCode == 400 && r.body.contains('Faltan credenciales')) {
       debugPrint('[AuthRepository] Reintentando como form-urlencoded...');
       final formBody =

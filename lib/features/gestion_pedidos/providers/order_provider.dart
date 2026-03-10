@@ -3,47 +3,81 @@ import '../models/order_model.dart';
 import '../repositories/order_repository.dart';
 
 class OrderProvider with ChangeNotifier {
-  final OrderRepository _repository = OrderRepository();
-  
+  OrderRepository _repository;
   List<OrderModel> _orders = [];
+  List<Map<String, dynamic>> _clientes = [];
+  List<Map<String, dynamic>> _semillas = [];
   bool _loading = false;
+  bool _loadingData = false;
   String? _error;
 
   List<OrderModel> get orders => _orders;
+  List<Map<String, dynamic>> get clientes => _clientes;
+  List<Map<String, dynamic>> get semillas => _semillas;
   bool get loading => _loading;
+  bool get loadingData => _loadingData;
   String? get error => _error;
 
-  OrderProvider() {
+  OrderProvider({String? authToken}) 
+    : _repository = OrderRepository(authToken: authToken) {
     _loadInitialData();
   }
 
-  void _loadInitialData() {
-    _orders = [
-      OrderModel(
-        id: "AA01",
-        customer: "Juanito Blas",
-        crop: "Tomate",
-        variety: "Selecto",
-        quantity: 15.0,
-        unit: "charolas",
-        orderDate: DateTime.now().subtract(const Duration(days: 2)),
-        deliveryDate: DateTime.now().subtract(const Duration(days: 1)),
-        status: OrderStatus.delivered,
-      ),
-    ];
+  // Método para actualizar el token
+  void updateAuthToken(String token) {
+    _repository.setAuthToken(token);
+  }
+
+  Future<void> _loadInitialData() async {
+    _loadingData = true;
+    notifyListeners();
+    
+    try {
+      await Future.wait([
+        loadOrders(),
+        loadClientes(),
+        loadSemillas(),
+      ]);
+    } catch (e) {
+      _error = 'Error cargando datos iniciales: $e';
+    } finally {
+      _loadingData = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadClientes() async {
+    try {
+      _clientes = await _repository.getClientes();
+      _error = null;
+    } catch (e) {
+      _error = 'Error al cargar clientes: $e';
+      _clientes = [];
+    }
+    notifyListeners();
+  }
+
+  Future<void> loadSemillas() async {
+    try {
+      _semillas = await _repository.getSemillas();
+      _error = null;
+    } catch (e) {
+      _error = 'Error al cargar semillas: $e';
+      _semillas = [];
+    }
+    notifyListeners();
   }
 
   Future<void> loadOrders() async {
     _loading = true;
     notifyListeners();
     
-    await Future.delayed(const Duration(seconds: 1));
-    
     try {
       _orders = await _repository.getOrders();
       _error = null;
     } catch (e) {
       _error = 'Error al cargar pedidos: $e';
+      _orders = [];
     } finally {
       _loading = false;
       notifyListeners();
@@ -51,29 +85,26 @@ class OrderProvider with ChangeNotifier {
   }
 
   Future<void> addOrder(OrderModel order) async {
+    _loading = true;
+    notifyListeners();
+    
     try {
       await _repository.addOrder(order);
-      
-      final orderWithDefaults = order.copyWith(
-        unit: order.unit.isEmpty ? "unidades" : order.unit,
-      );
-      
-      _orders.insert(0, orderWithDefaults);
-      
-      if (orderWithDefaults.status == OrderStatus.shipped) {
-        _showShippingAlert(orderWithDefaults);
-      }
-      
+      _orders.insert(0, order);
       _error = null;
-      notifyListeners();
     } catch (e) {
       _error = 'Error al agregar pedido: $e';
-      notifyListeners();
       rethrow;
+    } finally {
+      _loading = false;
+      notifyListeners();
     }
   }
 
   Future<void> updateOrder(OrderModel updatedOrder) async {
+    _loading = true;
+    notifyListeners();
+    
     try {
       await _repository.updateOrder(updatedOrder);
       final index = _orders.indexWhere((order) => order.id == updatedOrder.id);
@@ -85,12 +116,13 @@ class OrderProvider with ChangeNotifier {
         }
         
         _error = null;
-        notifyListeners();
       }
     } catch (e) {
       _error = 'Error al actualizar pedido: $e';
-      notifyListeners();
       rethrow;
+    } finally {
+      _loading = false;
+      notifyListeners();
     }
   }
 
@@ -106,28 +138,33 @@ class OrderProvider with ChangeNotifier {
     return _orders.where((order) => order.status == status).toList();
   }
 
+  // CORREGIDO: Método searchOrders sin usar crop y variety
   List<OrderModel> searchOrders(String query) {
     if (query.isEmpty) return _orders;
     
     final lowercaseQuery = query.toLowerCase();
     return _orders.where((order) {
       return order.customer.toLowerCase().contains(lowercaseQuery) ||
-             order.crop.toLowerCase().contains(lowercaseQuery) ||
-             order.variety.toLowerCase().contains(lowercaseQuery) ||
-             order.id.toLowerCase().contains(lowercaseQuery);
+             order.id.toLowerCase().contains(lowercaseQuery) ||
+             order.tipo.toLowerCase().contains(lowercaseQuery) ||
+             (order.notes?.toLowerCase().contains(lowercaseQuery) ?? false);
     }).toList();
   }
 
   Future<void> deleteOrder(String orderId) async {
+    _loading = true;
+    notifyListeners();
+    
     try {
       await _repository.deleteOrder(orderId);
       _orders.removeWhere((order) => order.id == orderId);
       _error = null;
-      notifyListeners();
     } catch (e) {
       _error = 'Error al eliminar pedido: $e';
-      notifyListeners();
       rethrow;
+    } finally {
+      _loading = false;
+      notifyListeners();
     }
   }
 
@@ -151,25 +188,92 @@ class OrderProvider with ChangeNotifier {
     return _orders.where((order) => order.status == status).length;
   }
 
+  // Método para generar ID local (compatibilidad)
   String generateNextOrderId() {
-    if (_orders.isEmpty) {
-      return "AA01";
-    }
+    if (_orders.isEmpty) return "1";
+    final maxId = _orders.map((o) => int.tryParse(o.id) ?? 0)
+                        .reduce((a, b) => a > b ? a : b);
+    return (maxId + 1).toString();
+  }
+
+  // Método para crear un nuevo OrderModel con datos correctos
+  OrderModel createNewOrder({
+    required int idCliente,
+    required String customer,
+    required String tipo,
+    required OrderStatus status,
+    required double monto,
+    double? volumen,
+    DateTime? fechaEntrega,
+    String? notes,
+  }) {
+    return OrderModel.createNew(
+      id: '', // Se asignará cuando se guarde
+      tenantId: 1, // Obtener del usuario autenticado
+      idCliente: idCliente,
+      customer: customer,
+      tipo: tipo,
+      status: status,
+      monto: monto,
+      volumen: volumen,
+      fechaEntrega: fechaEntrega,
+      creadoPor: 1, // Obtener del usuario autenticado
+      notes: notes,
+    );
+  }
+
+  // Método para recargar todos los datos
+  Future<void> refreshAllData() async {
+    _loadingData = true;
+    notifyListeners();
     
-    int maxNumber = 0;
-    for (var order in _orders) {
-      if (order.id.startsWith('AA')) {
-        try {
-          final number = int.parse(order.id.substring(2));
-          if (number > maxNumber) {
-            maxNumber = number;
-          }
-        } catch (e) {
-          //
-        }
-      }
+    try {
+      await Future.wait([
+        loadOrders(),
+        loadClientes(),
+        loadSemillas(),
+      ]);
+      _error = null;
+    } catch (e) {
+      _error = 'Error al recargar datos: $e';
+    } finally {
+      _loadingData = false;
+      notifyListeners();
     }
-    
-    return 'AA${(maxNumber + 1).toString().padLeft(2, '0')}';
+  }
+
+  // Método para verificar conexión con el servidor
+  Future<bool> checkServerConnection() async {
+    try {
+      return await _repository.checkServerConnection();
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Método para obtener estadísticas
+  Future<Map<String, dynamic>> getOrderStatistics() async {
+    // Calcular estadísticas localmente
+    final totalOrders = _orders.length;
+    final pendingCount = _orders.where((o) => o.status == OrderStatus.pending).length;
+    final inProcessCount = _orders.where((o) => o.status == OrderStatus.inProcess).length;
+    final shippedCount = _orders.where((o) => o.status == OrderStatus.shipped).length;
+    final deliveredCount = _orders.where((o) => o.status == OrderStatus.delivered).length;
+    final cancelledCount = _orders.where((o) => o.status == OrderStatus.cancelled).length;
+
+    final totalAmount = _orders.fold(0.0, (sum, order) => sum + order.monto);
+    final totalPendingAmount = _orders.fold(0.0, (sum, order) => sum + order.saldoPendiente);
+
+    return {
+      'totalOrders': totalOrders,
+      'pendingCount': pendingCount,
+      'inProcessCount': inProcessCount,
+      'shippedCount': shippedCount,
+      'deliveredCount': deliveredCount,
+      'cancelledCount': cancelledCount,
+      'totalAmount': totalAmount,
+      'pendingAmount': totalPendingAmount,
+      'averageAmount': totalOrders > 0 ? totalAmount / totalOrders : 0,
+    };
   }
 }

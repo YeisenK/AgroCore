@@ -20,6 +20,7 @@ class _EditOrderPageState extends State<EditOrderPage> {
   late TextEditingController _cropController;
   late TextEditingController _varietyController;
   late TextEditingController _quantityController;
+  late TextEditingController _priceController;
   late TextEditingController _notesController;
   
   late OrderStatus _selectedStatus;
@@ -39,10 +40,11 @@ class _EditOrderPageState extends State<EditOrderPage> {
     if (order != null) {
       setState(() {
         _order = order;
-        _customerController = TextEditingController(text: order.customer);
         _cropController = TextEditingController(text: order.crop);
         _varietyController = TextEditingController(text: order.variety);
         _quantityController = TextEditingController(text: order.quantity.toString());
+        _priceController = TextEditingController(text: order.monto.toString());
+        _notesController = TextEditingController(text: order.notes ?? '');
         _notesController = TextEditingController(text: order.notes ?? '');
         _selectedStatus = order.status;
         _selectedDate = order.deliveryDate;
@@ -56,6 +58,7 @@ class _EditOrderPageState extends State<EditOrderPage> {
     _cropController.dispose();
     _varietyController.dispose();
     _quantityController.dispose();
+    _priceController.dispose();
     _notesController.dispose();
     super.dispose();
   }
@@ -93,16 +96,16 @@ class _EditOrderPageState extends State<EditOrderPage> {
       _loading = true;
     });
 
-    try {
-      final updatedOrder = _order!.copyWith(
-        customer: _customerController.text.trim(),
-        crop: _cropController.text.trim(),
-        variety: _varietyController.text.trim(),
-        quantity: double.parse(_quantityController.text),
-        deliveryDate: _selectedDate,
-        status: _selectedStatus,
-        notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
-      );
+  try {
+    final updatedOrder = _order!.copyWith(
+      customer: _customerController.text.trim(),
+      monto: double.parse(_priceController.text),
+      saldoPendiente: double.parse(_priceController.text), // O tu lógica de saldo
+      volumen: double.tryParse(_quantityController.text),
+      fechaEntrega: _selectedDate,
+      estado: _selectedStatus.statusString,
+      notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+    );
 
       await context.read<OrderProvider>().updateOrder(updatedOrder);
 
@@ -559,6 +562,8 @@ class _EditOrderPageState extends State<EditOrderPage> {
     switch (status) {
       case OrderStatus.pending:
         return 'Pendiente';
+      case OrderStatus.confirmed:
+        return 'Confirmado';
       case OrderStatus.inProcess:
         return 'En Proceso';
       case OrderStatus.shipped:

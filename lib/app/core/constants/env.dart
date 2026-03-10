@@ -1,2 +1,2 @@
-const String kApiBaseUrl = 'http://192.168.1.33/api';
+const String kApiBaseUrl = 'http://real.blocsa.com/api';
 const Duration kHttpTimeout = Duration(seconds: 5);

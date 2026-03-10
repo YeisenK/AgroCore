@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../../app/core/constants/routes.dart';
+import '../../../app/core/widgets/app_shell.dart';
+import '../../../app/data/auth/auth_controller.dart'; // Importar AuthController
 import '../models/siembra_model.dart';
 import '../notifiers/siembra_notifier.dart';
 import '../screens/siembra_form_screen.dart';
@@ -11,7 +14,7 @@ class SiembraListScreen extends StatelessWidget {
   const SiembraListScreen({super.key});
 
   void _mostrarFormularioDialogo(
-    BuildContext context, {
+    BuildContext context, { 
     SiembraModel? siembra,
   }) {
     showDialog(
@@ -24,37 +27,43 @@ class SiembraListScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Obtenemos el notifier aquí, en el widget padre
     final notifier = Provider.of<SiembraNotifier>(context);
+    final auth = context.watch<AuthController>(); // Obtener AuthController
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Gestión de Siembras'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Theme.of(context).colorScheme.onPrimary,
-      ),
-      body: notifier.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              padding: const EdgeInsets.only(top: 8, bottom: 80),
-              itemCount: notifier.siembras.length,
-              itemBuilder: (context, index) {
-                final siembra = notifier.siembras[index];
+    // Contenido de la página
+    final content = notifier.isLoading
+        ? const Center(child: CircularProgressIndicator())
+        : ListView.builder(
+            padding: const EdgeInsets.only(top: 8, bottom: 80),
+            itemCount: notifier.siembras.length,
+            itemBuilder: (context, index) {
+              final siembra = notifier.siembras[index];
 
-                return _SiembraCard(
-                  siembra: siembra,
-                  onEdit: () =>
-                      _mostrarFormularioDialogo(context, siembra: siembra),
-                  onDelete: () => notifier.eliminarSiembra(siembra.id),
-                );
-              },
-            ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          _mostrarFormularioDialogo(context);
-        },
-        child: const Icon(Icons.add),
-      ),
+              return _SiembraCard(
+                siembra: siembra,
+                onEdit: () =>
+                    _mostrarFormularioDialogo(context, siembra: siembra),
+                onDelete: () => notifier.eliminarSiembra(siembra.id),
+              );
+            },
+          );
+
+    // Usar AppShell
+    return AppShell(
+      title: 'Gestión de Siembras',
+      body: content,
+      actions: [
+        IconButton(
+          tooltip: 'Volver a selección de usuario',
+          icon: const Icon(Icons.switch_account),
+          onPressed: () => context.go(auth.preferredHome()),
+        ),
+        IconButton(
+          icon: const Icon(Icons.add),
+          onPressed: () => _mostrarFormularioDialogo(context),
+          tooltip: 'Nueva Siembra',
+        ),
+      ],
     );
   }
 }

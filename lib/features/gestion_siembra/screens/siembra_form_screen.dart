@@ -352,7 +352,7 @@ class __AddDetalleDialogState extends State<_AddDetalleDialog> {
         cultivo: _cultivoSeleccionado!,
         especificacion: _especificacionController.text.isNotEmpty
             ? _especificacionController.text
-            : 'N/A', // Valor por defecto
+            : 'N/A',
         cantidad: int.tryParse(_cantidadController.text) ?? 0,
       );
       Navigator.of(context).pop(nuevoDetalle);

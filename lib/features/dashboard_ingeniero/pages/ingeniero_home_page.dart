@@ -115,7 +115,6 @@ class IngenieroHomePage extends StatelessWidget {
         ),
         const SliverToBoxAdapter(child: SizedBox(height: 16)),
 
-        // Tabla de sensores
         SliverToBoxAdapter(
           child: _SensorsTable(sensores: s.sensores, dense: isTablet),
         ),
