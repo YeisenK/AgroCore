@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'dart:async';
+import 'dart:math';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../../app/core/widgets/app_shell.dart';
@@ -38,6 +39,7 @@ class _AgricultorHomePageState extends State<AgricultorHomePage> {
   Timer? _refreshTimer;
   final PageController _pageController = PageController();
   final TextEditingController _searchController = TextEditingController();
+  final Random _random = Random();
 
   // Estado
   bool _isLoading = false;
@@ -46,16 +48,52 @@ class _AgricultorHomePageState extends State<AgricultorHomePage> {
   String _selectedOrderFilter = 'Todos';
   double _chartInterval = 4.0;
 
-  // Datos (inicialmente vacíos - se llenarán desde APIs)
+  // Datos de sensores
   int _activeOrders = 0;
   int _upcomingDeliveries = 0;
-  double _avgHumidity = 0.0;
-  double _currentTemperature = 0.0;
   
-  final List<FlSpot> _humidityData = [];
+  // Datos de sensores específicos
+  double _currentSoilMoisture = 0.0;
+  double _currentTemperature = 0.0;
+  double _currentAirHumidity = 0.0;
+  
+  final List<FlSpot> _soilMoistureData = [];
   final List<FlSpot> _temperatureData = [];
+  final List<FlSpot> _airHumidityData = [];
+  
   final List<Map<String, dynamic>> _recentOrders = [];
   final List<Map<String, dynamic>> _alerts = [];
+
+  // Lista de sensores simulados
+  final List<Map<String, dynamic>> _sensors = [
+    {
+      'id': 'YL69_001',
+      'name': 'Sensor Humedad Suelo',
+      'type': 'YL-69',
+      'location': 'Sector Norte - Tomates',
+      'online': true,
+      'lastReading': 65.5,
+      'unit': '%'
+    },
+    {
+      'id': 'DHT11_001',
+      'name': 'Sensor Ambiental',
+      'type': 'DHT11',
+      'location': 'Sector Norte - Tomates',
+      'online': true,
+      'lastReading': 24.2,
+      'unit': '°C'
+    },
+    {
+      'id': 'YL69_002',
+      'name': 'Sensor Humedad Suelo',
+      'type': 'YL-69',
+      'location': 'Sector Sur - Lechugas',
+      'online': true,
+      'lastReading': 72.3,
+      'unit': '%'
+    },
+  ];
 
   // Getter para pedidos filtrados y buscados
   List<Map<String, dynamic>> get _searchedOrders {
@@ -86,8 +124,8 @@ class _AgricultorHomePageState extends State<AgricultorHomePage> {
     super.initState();
     _loadInitialData();
     
-    // Configurar actualización automática cada 30 segundos
-    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+    // Configurar actualización automática cada 10 segundos (más rápido para sensores)
+    _refreshTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
       _refreshData();
     });
   }
@@ -100,12 +138,12 @@ class _AgricultorHomePageState extends State<AgricultorHomePage> {
     });
 
     try {
-      // TODO: Reemplazar con llamadas reales a tus APIs
       await Future.wait([
         _loadKPIData(),
         _loadChartData(),
         _loadOrdersData(),
         _loadAlertsData(),
+        _loadSensorsData(),
       ]);
     } catch (e) {
       setState(() {
@@ -123,193 +161,218 @@ class _AgricultorHomePageState extends State<AgricultorHomePage> {
     if (_isLoading) return;
 
     try {
-      // TODO: Reemplazar con llamadas reales a tus APIs
       await Future.wait([
         _loadKPIData(),
         _loadChartData(),
-        _loadOrdersData(),
         _loadAlertsData(),
+        _loadSensorsData(),
       ]);
     } catch (e) {
-      // No mostramos error en refresh automático para no molestar al usuario
       print('Error en refresh automático: $e');
     }
   }
 
-  // TODO: Implementar estas funciones con tus servicios reales
+  // Cargar datos de KPIs con sensores reales
   Future<void> _loadKPIData() async {
-    // Ejemplo de estructura JSON esperada:
-    /*
-    {
-      "active_orders": 12,
-      "upcoming_deliveries": 5,
-      "avg_humidity": 68.5,
-      "current_temperature": 24.3
-    }
-    */
-    
-    // Simulación - reemplazar con:
-    // final response = await http.get(Uri.parse('https://tu-api.com/agricultor/kpi'));
-    // final data = json.decode(response.body);
-    
-    await Future.delayed(const Duration(milliseconds: 500)); // Remover esta línea
+    // Simulación de datos reales de sensores
+    await Future.delayed(const Duration(milliseconds: 300));
     
     setState(() {
-      _activeOrders = 0; // data['active_orders']
-      _upcomingDeliveries = 0; // data['upcoming_deliveries']
-      _avgHumidity = 0.0; // data['avg_humidity']
-      _currentTemperature = 0.0; // data['current_temperature']
-    });
-  }
-
-  Future<void> _loadChartData() async {
-    // Ejemplo de estructura JSON esperada:
-    /*
-    {
-      "humidity_data": [
-        {"x": 0, "y": 65.2},
-        {"x": 1, "y": 66.8},
-        ...
-      ],
-      "temperature_data": [
-        {"x": 0, "y": 23.1},
-        {"x": 1, "y": 23.8},
-        ...
-      ]
-    }
-    */
-    
-    // Simulación - reemplazar con:
-    // final response = await http.get(Uri.parse('https://tu-api.com/agricultor/chart-data'));
-    // final data = json.decode(response.body);
-    
-    await Future.delayed(const Duration(milliseconds: 300)); // Remover esta línea
-    
-    setState(() {
-      _humidityData.clear();
-      _temperatureData.clear();
+      // Datos realistas para agricultura
+      _currentSoilMoisture = 60.0 + _random.nextDouble() * 20; // 60-80%
+      _currentTemperature = 20.0 + _random.nextDouble() * 12;  // 20-32°C
+      _currentAirHumidity = 45.0 + _random.nextDouble() * 25;  // 45-70%
       
-      // data['humidity_data'].forEach((point) {
-      //   _humidityData.add(FlSpot(point['x'], point['y']));
-      // });
-      // data['temperature_data'].forEach((point) {
-      //   _temperatureData.add(FlSpot(point['x'], point['y']));
-      // });
+      _activeOrders = 8 + _random.nextInt(7); // 8-15 pedidos
+      _upcomingDeliveries = 3 + _random.nextInt(4); // 3-7 entregas
     });
   }
 
+  // Cargar datos para gráficos
+  Future<void> _loadChartData() async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    
+    setState(() {
+      // Generar datos históricos si está vacío
+      if (_soilMoistureData.isEmpty) {
+        final now = DateTime.now();
+        for (int i = 0; i < 24; i++) {
+          final time = now.subtract(Duration(hours: 23 - i));
+          
+          // Datos realistas para sensores
+          double soilMoisture = 60.0 + _random.nextDouble() * 15; // YL-69: 60-75%
+          double temperature = 22.0 + _random.nextDouble() * 8;   // DHT11: 22-30°C
+          double airHumidity = 50.0 + _random.nextDouble() * 20;  // DHT11: 50-70%
+          
+          _soilMoistureData.add(FlSpot(i.toDouble(), soilMoisture));
+          _temperatureData.add(FlSpot(i.toDouble(), temperature));
+          _airHumidityData.add(FlSpot(i.toDouble(), airHumidity));
+        }
+      } else {
+        // Actualizar con nuevos datos en tiempo real
+        if (_soilMoistureData.length >= 24) _soilMoistureData.removeAt(0);
+        if (_temperatureData.length >= 24) _temperatureData.removeAt(0);
+        if (_airHumidityData.length >= 24) _airHumidityData.removeAt(0);
+        
+        // Agregar nuevos datos manteniendo el rango de 24 horas
+        const lastX = 23.0;
+        _soilMoistureData.add(FlSpot(lastX, _currentSoilMoisture));
+        _temperatureData.add(FlSpot(lastX, _currentTemperature));
+        _airHumidityData.add(FlSpot(lastX, _currentAirHumidity));
+        
+        // Renumerar los puntos X para mantener el rango 0-23
+        for (int i = 0; i < _soilMoistureData.length; i++) {
+          _soilMoistureData[i] = FlSpot(i.toDouble(), _soilMoistureData[i].y);
+          _temperatureData[i] = FlSpot(i.toDouble(), _temperatureData[i].y);
+          _airHumidityData[i] = FlSpot(i.toDouble(), _airHumidityData[i].y);
+        }
+      }
+    });
+  }
+
+  // Cargar datos de pedidos
   Future<void> _loadOrdersData() async {
-    // Ejemplo de estructura JSON esperada:
-    /*
-    [
-      {
-        "id": 1,
-        "cliente": "Supermercado Oaxaca",
-        "fecha": "2024-01-15T10:00:00Z",
-        "estado": "en_camino",
-        "productos": "Tomates (50kg), Lechugas (30kg)",
-        "direccion": "Av. Principal 123, Oaxaca",
-        "total": 1250.00,
-        "telefono": "+1234567890",
-        "notas": "Entregar en recepción"
-      },
-      ...
-    ]
-    */
-    
-    // Simulación - reemplazar con:
-    // final response = await http.get(Uri.parse('https://tu-api.com/agricultor/orders'));
-    // final data = json.decode(response.body);
-    
-    await Future.delayed(const Duration(milliseconds: 400)); // Remover esta línea
+    await Future.delayed(const Duration(milliseconds: 400));
     
     setState(() {
       _recentOrders.clear();
-      // _recentOrders.addAll(data.map((order) => _parseOrder(order)).toList());
+      _recentOrders.addAll([
+        {
+          'id': 1,
+          'cliente': 'Supermercado Oaxaca', 
+          'fecha': 'Hoy 10:00 AM', 
+          'estado': 'En camino',
+          'productos': 'Tomates (50kg), Lechugas (30kg)',
+          'direccion': 'Av. Principal 123, Oaxaca',
+          'total': '\$1,250.00'
+        },
+        {
+          'id': 2,
+          'cliente': 'Restaurante Istmo', 
+          'fecha': 'Hoy 01:30 PM', 
+          'estado': 'Preparando',
+          'productos': 'Zanahorias (20kg), Cebollas (15kg)',
+          'direccion': 'Calle Reforma 456, Istmo',
+          'total': '\$650.00'
+        },
+        {
+          'id': 3,
+          'cliente': 'Mercado Juárez', 
+          'fecha': 'Mañana 09:00 AM', 
+          'estado': 'Programado',
+          'productos': 'Pepinos (40kg), Pimientos (25kg)',
+          'direccion': 'Plaza Central 789, Juárez',
+          'total': '\$890.00'
+        },
+      ]);
     });
   }
 
+  // Cargar datos de alertas específicas para sensores
   Future<void> _loadAlertsData() async {
-    // Ejemplo de estructura JSON esperada:
-    /*
-    [
-      {
-        "id": 1,
-        "tipo": "humedad_baja",
-        "mensaje": "Humedad crítica en Invernadero 2",
-        "nivel": "alto",
-        "fecha": "2024-01-15T08:30:00Z",
-        "detalles": "La humedad ha bajado al 45%. Se recomienda activar el sistema de riego.",
-        "resuelta": false,
-        "invernadero_id": 2,
-        "sensor_id": "S012"
-      },
-      ...
-    ]
-    */
+    await Future.delayed(const Duration(milliseconds: 350));
     
-    // Simulación - reemplazar con:
-    // final response = await http.get(Uri.parse('https://tu-api.com/agricultor/alerts'));
-    // final data = json.decode(response.body);
+    // Generar alertas basadas en los datos actuales de sensores
+    final newAlerts = <Map<String, dynamic>>[];
     
-    await Future.delayed(const Duration(milliseconds: 350)); // Remover esta línea
+    // Alertas de humedad del suelo (YL-69)
+    if (_currentSoilMoisture < 30) {
+      newAlerts.add({
+        'id': DateTime.now().millisecondsSinceEpoch + 1,
+        'mensaje': 'Humedad del suelo muy baja',
+        'nivel': 'Alto',
+        'fecha': 'Ahora',
+        'detalles': 'Humedad del suelo: ${_currentSoilMoisture.toStringAsFixed(1)}%. Se recomienda riego inmediato.',
+        'resuelta': false,
+        'sensor': 'YL69_001',
+        'tipo': 'humedad_suelo'
+      });
+    } else if (_currentSoilMoisture > 85) {
+      newAlerts.add({
+        'id': DateTime.now().millisecondsSinceEpoch + 2,
+        'mensaje': 'Suelo saturado de agua',
+        'nivel': 'Medio',
+        'fecha': 'Ahora',
+        'detalles': 'Humedad del suelo: ${_currentSoilMoisture.toStringAsFixed(1)}%. Considerar reducir riego.',
+        'resuelta': false,
+        'sensor': 'YL69_001',
+        'tipo': 'humedad_suelo'
+      });
+    }
+    
+    // Alertas de temperatura (DHT11)
+    if (_currentTemperature < 15) {
+      newAlerts.add({
+        'id': DateTime.now().millisecondsSinceEpoch + 3,
+        'mensaje': 'Temperatura muy baja',
+        'nivel': 'Medio',
+        'fecha': 'Ahora',
+        'detalles': 'Temperatura: ${_currentTemperature.toStringAsFixed(1)}°C. Riesgo para cultivos tropicales.',
+        'resuelta': false,
+        'sensor': 'DHT11_001',
+        'tipo': 'temperatura'
+      });
+    } else if (_currentTemperature > 35) {
+      newAlerts.add({
+        'id': DateTime.now().millisecondsSinceEpoch + 4,
+        'mensaje': 'Temperatura muy alta',
+        'nivel': 'Alto',
+        'fecha': 'Ahora',
+        'detalles': 'Temperatura: ${_currentTemperature.toStringAsFixed(1)}°C. Riesgo de estrés térmico.',
+        'resuelta': false,
+        'sensor': 'DHT11_001',
+        'tipo': 'temperatura'
+      });
+    }
+    
+    // Alertas de humedad ambiental (DHT11)
+    if (_currentAirHumidity < 40) {
+      newAlerts.add({
+        'id': DateTime.now().millisecondsSinceEpoch + 5,
+        'mensaje': 'Humedad ambiental baja',
+        'nivel': 'Bajo',
+        'fecha': 'Ahora',
+        'detalles': 'Humedad ambiental: ${_currentAirHumidity.toStringAsFixed(1)}%. Considerar humidificación.',
+        'resuelta': false,
+        'sensor': 'DHT11_001',
+        'tipo': 'humedad_ambiental'
+      });
+    }
+
+    setState(() {
+      // Mantener solo las últimas 10 alertas
+      if (_alerts.length + newAlerts.length > 10) {
+        _alerts.removeRange(0, (_alerts.length + newAlerts.length) - 10);
+      }
+      
+      // Agregar nuevas alertas al inicio
+      _alerts.insertAll(0, newAlerts);
+    });
+  }
+
+  // Cargar datos de sensores
+  Future<void> _loadSensorsData() async {
+    await Future.delayed(const Duration(milliseconds: 250));
     
     setState(() {
-      _alerts.clear();
-      // _alerts.addAll(data.map((alert) => _parseAlert(alert)).toList());
+      // Actualizar estado de sensores (simular desconexiones ocasionales)
+      for (var sensor in _sensors) {
+        if (_random.nextDouble() < 0.05) { // 5% de probabilidad de desconexión
+          sensor['online'] = !sensor['online'];
+        }
+        
+        // Actualizar lecturas
+        if (sensor['type'] == 'YL-69') {
+          sensor['lastReading'] = 60.0 + _random.nextDouble() * 20;
+        } else if (sensor['type'] == 'DHT11') {
+          sensor['lastReading'] = 22.0 + _random.nextDouble() * 10;
+        }
+      }
     });
-  }
-
-  // TODO: Implementar función para parsear alertas
-  // ignore: unused_element
-  Map<String, dynamic> _parseAlert(Map<String, dynamic> alertData) {
-    return {
-      'id': alertData['id'],
-      'mensaje': alertData['mensaje'],
-      'nivel': _translateAlertLevel(alertData['nivel']),
-      'fecha': _formatDate(alertData['fecha']),
-      'detalles': alertData['detalles'],
-      'resuelta': alertData['resuelta'],
-      'rawData': alertData, // Mantener datos originales
-    };
-  }
-
-  // Utilidades para formateo
-  String _formatDate(String isoDate) {
-    // TODO: Implementar formateo de fecha según tu zona horaria
-    final date = DateTime.parse(isoDate);
-    return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
-  }
-
-  // ignore: unused_element
-  String _translateStatus(String status) {
-    // TODO: Mapear estados del backend a textos legibles
-    const statusMap = {
-      'programado': 'Programado',
-      'preparando': 'Preparando',
-      'en_camino': 'En camino',
-      'entregado': 'Entregado',
-      'cancelado': 'Cancelado',
-    };
-    return statusMap[status] ?? status;
-  }
-
-  String _translateAlertLevel(String level) {
-    // TODO: Mapear niveles del backend a textos legibles
-    const levelMap = {
-      'bajo': 'Bajo',
-      'medio': 'Medio',
-      'alto': 'Alto',
-      'critico': 'Crítico',
-    };
-    return levelMap[level] ?? level;
   }
 
   // Acciones
   Future<void> _addNewOrder() async {
-    // TODO: Implementar creación de nuevo pedido
-    // Navigator.push(context, MaterialPageRoute(builder: (_) => CreateOrderPage()));
-    
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: const Text('Funcionalidad de crear pedido - Por implementar'),
@@ -319,9 +382,6 @@ class _AgricultorHomePageState extends State<AgricultorHomePage> {
   }
 
   Future<void> _resolveAlert(int alertId) async {
-    // TODO: Implementar resolución de alerta
-    // await http.put(Uri.parse('https://tu-api.com/alerts/$alertId/resolve'));
-    
     setState(() {
       final alertIndex = _alerts.indexWhere((alert) => alert['id'] == alertId);
       if (alertIndex != -1) {
@@ -338,9 +398,6 @@ class _AgricultorHomePageState extends State<AgricultorHomePage> {
   }
 
   Future<void> _deleteAlert(int alertId) async {
-    // TODO: Implementar eliminación de alerta
-    // await http.delete(Uri.parse('https://tu-api.com/alerts/$alertId'));
-    
     setState(() {
       _alerts.removeWhere((alert) => alert['id'] == alertId);
     });
@@ -360,99 +417,99 @@ class _AgricultorHomePageState extends State<AgricultorHomePage> {
     _pageController.jumpToPage(index);
   }
 
-@override
-void dispose() {
-  _refreshTimer?.cancel();
-  _pageController.dispose();
-  _searchController.dispose();
-  super.dispose();
-}
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    _pageController.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
 
-@override
-Widget build(BuildContext context) {
-  return AppShell(
-    title: 'Dashboard Agricultor',
-    actions: [
-      const _RoleSwitcherAction(), // Cambiado aquí
-      if (_isLoading)
-        const Padding(
-          padding: EdgeInsets.all(8.0),
-          child: SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(strokeWidth: 2),
+  @override
+  Widget build(BuildContext context) {
+    return AppShell(
+      title: 'Dashboard Agricultor - Sensores YL69/DHT11',
+      actions: [
+        const _RoleSwitcherAction(),
+        if (_isLoading)
+          const Padding(
+            padding: EdgeInsets.all(8.0),
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
           ),
+        IconButton(
+          icon: const Icon(Icons.refresh),
+          onPressed: _refreshData,
+          tooltip: 'Actualizar datos',
         ),
-      IconButton(
-        icon: const Icon(Icons.refresh),
-        onPressed: _refreshData,
-        tooltip: 'Actualizar datos',
-      ),
-    ],
-    body: _isLoading && _recentOrders.isEmpty
-        ? const Center(child: CircularProgressIndicator())
-        : _errorMessage != null
-            ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+      ],
+      body: _isLoading && _recentOrders.isEmpty
+          ? const Center(child: CircularProgressIndicator())
+          : _errorMessage != null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error, size: 64, color: Colors.red),
+                      const SizedBox(height: 16),
+                      Text(
+                        _errorMessage!,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _loadInitialData,
+                        child: const Text('Reintentar'),
+                      ),
+                    ],
+                  ),
+                )
+              : Column(
                   children: [
-                    const Icon(Icons.error, size: 64, color: Colors.red),
-                    const SizedBox(height: 16),
-                    Text(
-                      _errorMessage!,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 16),
+                    // Bottom Navigation Bar personalizado
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        border: Border(
+                          bottom: BorderSide(
+                            color: Theme.of(context).colorScheme.outline,
+                            width: 1,
+                          ),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          _buildNavItem(0, Icons.dashboard, 'Dashboard'),
+                          _buildNavItem(1, Icons.shopping_cart, 'Pedidos'),
+                          _buildNavItem(2, Icons.warning, 'Alertas'),
+                          _buildNavItem(3, Icons.settings, 'Configuración'),
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: _loadInitialData,
-                      child: const Text('Reintentar'),
+                    Expanded(
+                      child: PageView(
+                        controller: _pageController,
+                        onPageChanged: (index) {
+                          setState(() {
+                            _selectedIndex = index;
+                          });
+                        },
+                        children: [
+                          _buildDashboardPage(),
+                          _buildOrdersPage(),
+                          _buildAlertsPage(),
+                          _buildSettingsPage(),
+                        ],
+                      ),
                     ),
                   ],
                 ),
-              )
-            : Column(
-                children: [
-                  // Bottom Navigation Bar personalizado
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
-                      border: Border(
-                        bottom: BorderSide(
-                          color: Theme.of(context).colorScheme.outline,
-                          width: 1,
-                        ),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        _buildNavItem(0, Icons.dashboard, 'Dashboard'),
-                        _buildNavItem(1, Icons.shopping_cart, 'Pedidos'),
-                        _buildNavItem(2, Icons.warning, 'Alertas'),
-                        _buildNavItem(3, Icons.settings, 'Configuración'),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: PageView(
-                      controller: _pageController,
-                      onPageChanged: (index) {
-                        setState(() {
-                          _selectedIndex = index;
-                        });
-                      },
-                      children: [
-                        _buildDashboardPage(),
-                        _buildOrdersPage(),
-                        _buildAlertsPage(),
-                        _buildSettingsPage(),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-  );
-}
+    );
+  }
 
   Widget _buildNavItem(int index, IconData icon, String label) {
     final isSelected = _selectedIndex == index;
@@ -460,7 +517,7 @@ Widget build(BuildContext context) {
     
     return Expanded(
       child: Material(
-        color: isSelected ? colorScheme.primary : Colors.transparent,
+        color: isSelected ? colorScheme.primary.withOpacity(0.1) : Colors.transparent,
         child: InkWell(
           onTap: () => _onItemTapped(index),
           child: Container(
@@ -492,6 +549,7 @@ Widget build(BuildContext context) {
   Widget _buildDashboardPage() {
     final unresolvedAlerts = _alerts.where((alert) => !alert['resuelta']).toList();
     final recentOrders = _recentOrders.take(3).toList();
+    final onlineSensors = _sensors.where((sensor) => sensor['online']).length;
 
     return RefreshIndicator(
       onRefresh: _loadInitialData,
@@ -501,31 +559,35 @@ Widget build(BuildContext context) {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // KPIs
+              // Estado del sistema
+              _buildSystemStatus(onlineSensors),
+              const SizedBox(height: 10),
+              
+              // KPIs de sensores
               LayoutBuilder(
                 builder: (context, constraints) {
                   if (constraints.maxWidth < 600) {
                     return Column(
                       children: [
                         KpiCard(
-                          title: 'Pedidos activos', 
-                          value: _activeOrders.toString(),
-                          icon: Icons.shopping_cart,
-                          color: Theme.of(context).colorScheme.primary,
+                          title: 'Humedad Suelo', 
+                          value: '${_currentSoilMoisture.toStringAsFixed(1)}%',
+                          icon: Icons.grass,
+                          color: Colors.brown,
                         ),
                         const SizedBox(height: 10),
                         KpiCard(
-                          title: 'Próximas entregas', 
-                          value: _upcomingDeliveries.toString(),
-                          icon: Icons.local_shipping,
-                          color: Theme.of(context).colorScheme.secondary,
+                          title: 'Temperatura', 
+                          value: '${_currentTemperature.toStringAsFixed(1)}°C',
+                          icon: Icons.thermostat,
+                          color: Colors.orange,
                         ),
                         const SizedBox(height: 10),
                         KpiCard(
-                          title: 'Humedad Prom.', 
-                          value: '${_avgHumidity.toStringAsFixed(1)}%',
+                          title: 'Humedad Aire', 
+                          value: '${_currentAirHumidity.toStringAsFixed(1)}%',
                           icon: Icons.water_drop,
-                          color: Theme.of(context).colorScheme.tertiary,
+                          color: Colors.blue,
                         ),
                       ],
                     );
@@ -534,22 +596,22 @@ Widget build(BuildContext context) {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         KpiCard(
-                          title: 'Pedidos activos', 
-                          value: _activeOrders.toString(),
-                          icon: Icons.shopping_cart,
-                          color: Theme.of(context).colorScheme.primary,
+                          title: 'Humedad Suelo', 
+                          value: '${_currentSoilMoisture.toStringAsFixed(1)}%',
+                          icon: Icons.grass,
+                          color: Colors.brown,
                         ),
                         KpiCard(
-                          title: 'Próximas entregas', 
-                          value: _upcomingDeliveries.toString(),
-                          icon: Icons.local_shipping,
-                          color: Theme.of(context).colorScheme.secondary,
+                          title: 'Temperatura', 
+                          value: '${_currentTemperature.toStringAsFixed(1)}°C',
+                          icon: Icons.thermostat,
+                          color: Colors.orange,
                         ),
                         KpiCard(
-                          title: 'Humedad Prom.', 
-                          value: '${_avgHumidity.toStringAsFixed(1)}%',
+                          title: 'Humedad Aire', 
+                          value: '${_currentAirHumidity.toStringAsFixed(1)}%',
                           icon: Icons.water_drop,
-                          color: Theme.of(context).colorScheme.tertiary,
+                          color: Colors.blue,
                         ),
                       ],
                     );
@@ -558,52 +620,23 @@ Widget build(BuildContext context) {
               ),
               const SizedBox(height: 20),
 
-              // Métricas
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildMetricCard(
-                        'Temperatura Actual',
-                        '${_currentTemperature.toStringAsFixed(1)}°C',
-                        Icons.thermostat,
-                        Theme.of(context).colorScheme.primary,
-                      ),
-                      _buildMetricCard(
-                        'Humedad Actual',
-                        '${_avgHumidity.toStringAsFixed(1)}%',
-                        Icons.water_drop,
-                        Theme.of(context).colorScheme.tertiary,
-                      ),
-                      _buildMetricCard(
-                        'Alertas Activas',
-                        unresolvedAlerts.length.toString(),
-                        Icons.warning,
-                        unresolvedAlerts.isEmpty ? 
-                          Theme.of(context).colorScheme.tertiary : 
-                          Theme.of(context).colorScheme.error,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              // Sensores activos
+              _buildSensorsGrid(),
               const SizedBox(height: 20),
 
-              // Gráfico
-              if (_humidityData.isNotEmpty && _temperatureData.isNotEmpty) ...[
+              // Gráfico de sensores
+              if (_soilMoistureData.isNotEmpty) ...[
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('🌡 Humedad y Temperatura',
+                    const Text('📊 Métricas de Sensores - Últimas 24h',
                         style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     _buildIntervalSelector(),
                   ],
                 ),
                 const SizedBox(height: 10),
                 SizedBox(
-                  height: 200,
+                  height: 250,
                   child: Card(
                     child: Padding(
                       padding: const EdgeInsets.all(12.0),
@@ -639,29 +672,30 @@ Widget build(BuildContext context) {
                           ),
                           borderData: FlBorderData(show: true),
                           minX: 0,
-                          maxX: _humidityData.isEmpty ? 23 : _humidityData.last.x,
+                          maxX: 23,
                           minY: 0,
                           maxY: 80,
                           lineBarsData: [
+                            // Humedad del suelo (YL-69)
                             LineChartBarData(
                               isCurved: true,
-                              spots: _humidityData,
-                              color: Theme.of(context).colorScheme.tertiary,
+                              spots: _soilMoistureData,
+                              color: Colors.brown,
                               barWidth: 3,
-                              belowBarData: BarAreaData(
-                                show: true, 
-                                color: Theme.of(context).colorScheme.tertiary
-                              ),
                             ),
+                            // Temperatura (DHT11)
                             LineChartBarData(
                               isCurved: true,
                               spots: _temperatureData,
-                              color: Theme.of(context).colorScheme.primary,
+                              color: Colors.orange,
                               barWidth: 3,
-                              belowBarData: BarAreaData(
-                                show: true, 
-                                color: Theme.of(context).colorScheme.primary
-                              ),
+                            ),
+                            // Humedad ambiental (DHT11)
+                            LineChartBarData(
+                              isCurved: true,
+                              spots: _airHumidityData,
+                              color: Colors.blue,
+                              barWidth: 3,
                             ),
                           ],
                         ),
@@ -669,6 +703,40 @@ Widget build(BuildContext context) {
                     ),
                   ),
                 ),
+                // Leyenda del gráfico
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildLegendItem('Humedad Suelo', Colors.brown),
+                      _buildLegendItem('Temperatura', Colors.orange),
+                      _buildLegendItem('Humedad Aire', Colors.blue),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
+
+              // Alertas críticas
+              if (unresolvedAlerts.isNotEmpty) ...[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('🚨 Alertas Activas',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    Badge(
+                      label: Text(unresolvedAlerts.length.toString()),
+                      backgroundColor: Theme.of(context).colorScheme.error,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                ...unresolvedAlerts.take(2).map((alerta) => SensorAlertTile(
+                  alerta: alerta,
+                  onTap: () => _showAlertDetailDialog(alerta),
+                  onResolve: () => _resolveAlert(alerta['id']),
+                )),
                 const SizedBox(height: 20),
               ],
 
@@ -716,53 +784,66 @@ Widget build(BuildContext context) {
                     ),
                   ),
                 ),
-
-              const SizedBox(height: 20),
-
-              // Alertas activas
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('⚠️ Alertas activas',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  Badge(
-                    label: Text(unresolvedAlerts.length.toString()),
-                    backgroundColor: Theme.of(context).colorScheme.error,
-                    child: IconButton(
-                      icon: const Icon(Icons.notifications, size: 20),
-                      onPressed: () {
-                        setState(() {
-                          _selectedIndex = 2;
-                        });
-                        _pageController.jumpToPage(2);
-                      },
-                      tooltip: 'Ver todas las alertas',
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              if (unresolvedAlerts.isNotEmpty) 
-                ...unresolvedAlerts.take(2).map((alerta) => AlertTile(
-                  alerta: alerta,
-                  onTap: () => context.push('/alertas/${alerta['id']}'),
-                ))
-              else
-                const Card(
-                  child: Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: Center(
-                      child: Text(
-                        'No hay alertas activas',
-                        style: TextStyle(color: Colors.green),
-                      ),
-                    ),
-                  ),
-                ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildSystemStatus(int onlineSensors) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Row(
+          children: [
+            Icon(
+              Icons.sensors,
+              color: onlineSensors == _sensors.length ? Colors.green : Colors.orange,
+              size: 16,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Sensores: $onlineSensors/${_sensors.length} en línea',
+              style: TextStyle(
+                color: onlineSensors == _sensors.length ? Colors.green : Colors.orange,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const Spacer(),
+            Text(
+              'Actualizado: ${DateTime.now().toString().substring(11, 19)}',
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSensorsGrid() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('📡 Sensores Activos', 
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 10),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+            childAspectRatio: 2.2,
+          ),
+          itemCount: _sensors.length,
+          itemBuilder: (context, index) {
+            final sensor = _sensors[index];
+            return SensorCard(sensor: sensor);
+          },
+        ),
+      ],
     );
   }
 
@@ -848,7 +929,7 @@ Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(12.0),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('⚠️ Todas las Alertas', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        const Text('⚠️ Alertas del Sistema', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         const SizedBox(height: 10),
         if (unresolved.isNotEmpty) ...[
           Row(children: [
@@ -871,9 +952,9 @@ Widget build(BuildContext context) {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.notifications_off, size: 64, color: Colors.grey),
+                      Icon(Icons.check_circle, size: 64, color: Colors.green),
                       SizedBox(height: 16),
-                      Text('No hay alertas registradas', style: TextStyle(fontSize: 16, color: Colors.grey)),
+                      Text('No hay alertas activas', style: TextStyle(fontSize: 16, color: Colors.green)),
                     ],
                   ),
                 )
@@ -881,9 +962,9 @@ Widget build(BuildContext context) {
                   onRefresh: _loadInitialData,
                   child: ListView(
                     children: [
-                      ...unresolved.map((a) => AlertTile(
+                      ...unresolved.map((a) => SensorAlertTile(
                             alerta: a,
-                            onTap: () => context.push('/alertas/${a['id']}'),
+                            onTap: () => _showAlertDetailDialog(a),
                             onResolve: () => _resolveAlert(a['id']),
                             onDelete: () => _deleteAlert(a['id']),
                           )),
@@ -896,9 +977,9 @@ Widget build(BuildContext context) {
                               color: Theme.of(context).colorScheme.tertiary
                             )),
                         const SizedBox(height: 10),
-                        ...resolved.map((a) => AlertTile(
+                        ...resolved.map((a) => SensorAlertTile(
                               alerta: a,
-                              onTap: () => context.push('/alertas/${a['id']}'),
+                              onTap: () => _showAlertDetailDialog(a),
                               onDelete: () => _deleteAlert(a['id']),
                             )),
                       ],
@@ -943,6 +1024,15 @@ Widget build(BuildContext context) {
             onTap: () => _showSyncSettings(context),
           ),
         ),
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.sensors),
+            title: const Text('Gestión de Sensores'),
+            subtitle: const Text('Configurar y monitorear sensores'),
+            trailing: const Icon(Icons.arrow_forward),
+            onTap: () => _showSensorsSettings(context),
+          ),
+        ),
       ]),
     );
   }
@@ -959,15 +1049,53 @@ Widget build(BuildContext context) {
     );
   }
 
-  Widget _buildMetricCard(String title, String value, IconData icon, Color color) {
-    return Column(
+  Widget _buildLegendItem(String text, Color color) {
+    return Row(
       children: [
-        Icon(icon, color: color, size: 30),
-        const SizedBox(height: 8),
-        Text(title, style: const TextStyle(fontSize: 14, color: Colors.grey)),
-        const SizedBox(height: 4),
-        Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
+        Container(
+          width: 12,
+          height: 12,
+          color: color,
+        ),
+        const SizedBox(width: 4),
+        Text(text, style: const TextStyle(fontSize: 12)),
       ],
+    );
+  }
+
+  void _showAlertDetailDialog(Map<String, dynamic> alerta) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(alerta['mensaje']),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(alerta['detalles']),
+              const SizedBox(height: 16),
+              Text('Sensor: ${alerta['sensor']}'),
+              Text('Tipo: ${alerta['tipo']}'),
+              Text('Nivel: ${alerta['nivel']}'),
+              Text('Fecha: ${alerta['fecha']}'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cerrar'),
+          ),
+          if (!alerta['resuelta'])
+            TextButton(
+              onPressed: () {
+                _resolveAlert(alerta['id']);
+                Navigator.pop(context);
+              },
+              child: const Text('Marcar Resuelta'),
+            ),
+        ],
+      ),
     );
   }
 
@@ -976,7 +1104,17 @@ Widget build(BuildContext context) {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Configuración de Notificaciones'),
-        content: const Text('Aquí puedes configurar tus preferencias de notificaciones.'),
+        content: const SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(leading: Icon(Icons.water_drop), title: Text('Alertas de humedad del suelo')),
+              ListTile(leading: Icon(Icons.thermostat), title: Text('Alertas de temperatura')),
+              ListTile(leading: Icon(Icons.air), title: Text('Alertas de humedad ambiental')),
+              ListTile(leading: Icon(Icons.shopping_cart), title: Text('Notificaciones de pedidos')),
+            ],
+          ),
+        ),
         actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cerrar'))],
       ),
     );
@@ -987,7 +1125,7 @@ Widget build(BuildContext context) {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Configuración de Gráficos'),
-        content: const Text('Personaliza la visualización de los gráficos.'),
+        content: const Text('Personaliza la visualización de los gráficos de sensores.'),
         actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cerrar'))],
       ),
     );
@@ -998,14 +1136,159 @@ Widget build(BuildContext context) {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Sincronización de Datos'),
-        content: const Text('Configura la frecuencia de actualización de datos.'),
+        content: const Text('Configura la frecuencia de actualización de datos de sensores.'),
+        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cerrar'))],
+      ),
+    );
+  }
+
+  void _showSensorsSettings(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Gestión de Sensores'),
+        content: const Text('Configura y monitorea el estado de tus sensores YL-69 y DHT11.'),
         actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cerrar'))],
       ),
     );
   }
 }
 
-// Widgets auxiliares (mantener los mismos que antes)
+// Widgets específicos para sensores
+class SensorCard extends StatelessWidget {
+  final Map<String, dynamic> sensor;
+
+  const SensorCard({super.key, required this.sensor});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: sensor['online'] ? Colors.white : Colors.grey[200],
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  sensor['online'] ? Icons.sensors : Icons.sensors_off,
+                  color: sensor['online'] ? Colors.green : Colors.red,
+                  size: 16,
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    sensor['name'],
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: sensor['online'] ? Colors.black : Colors.grey,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              sensor['type'],
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '${sensor['lastReading'].toStringAsFixed(1)}${sensor['unit']}',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: sensor['online'] ? Colors.blue : Colors.grey,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              sensor['location'],
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class SensorAlertTile extends StatelessWidget {
+  final Map<String, dynamic> alerta;
+  final VoidCallback onTap;
+  final VoidCallback? onResolve;
+  final VoidCallback? onDelete;
+
+  const SensorAlertTile({
+    super.key,
+    required this.alerta,
+    required this.onTap,
+    this.onResolve,
+    this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    Color getSeverityColor(String nivel) {
+      switch (nivel) {
+        case 'Alto': return Colors.red;
+        case 'Medio': return Colors.orange;
+        case 'Bajo': return Colors.yellow;
+        default: return Colors.grey;
+      }
+    }
+
+    IconData getSeverityIcon(String nivel) {
+      switch (nivel) {
+        case 'Alto': return Icons.error;
+        case 'Medio': return Icons.warning;
+        case 'Bajo': return Icons.info;
+        default: return Icons.help;
+      }
+    }
+
+    final isResolved = alerta['resuelta'] ?? false;
+
+    return Card(
+      color: getSeverityColor(alerta['nivel']).withOpacity(0.1),
+      child: ListTile(
+        leading: Icon(
+          isResolved ? Icons.check_circle : getSeverityIcon(alerta['nivel']),
+          color: isResolved ? Colors.green : getSeverityColor(alerta['nivel']),
+        ),
+        title: Text(alerta['mensaje']),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(alerta['detalles']),
+            const SizedBox(height: 4),
+            Text('Sensor: ${alerta['sensor']}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+          ],
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (!isResolved && onResolve != null)
+              IconButton(
+                icon: const Icon(Icons.check, color: Colors.green),
+                onPressed: onResolve,
+              ),
+            if (onDelete != null)
+              IconButton(
+                icon: const Icon(Icons.delete, color: Colors.red),
+                onPressed: onDelete,
+              ),
+            const Icon(Icons.arrow_forward),
+          ],
+        ),
+        onTap: onTap,
+      ),
+    );
+  }
+}
+
+// Widgets auxiliares (mantener los mismos)
 class KpiCard extends StatelessWidget {
   final String title;
   final String value;
@@ -1074,64 +1357,6 @@ class PedidoTile extends StatelessWidget {
         return Colors.orange;
       default:
         return Colors.grey;
-    }
-  }
-}
-
-class AlertTile extends StatelessWidget {
-  final Map<String, dynamic> alerta;
-  final VoidCallback onTap;
-  final VoidCallback? onResolve;
-  final VoidCallback? onDelete;
-
-  const AlertTile({
-    super.key,
-    required this.alerta,
-    required this.onTap,
-    this.onResolve,
-    this.onDelete,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isResolved = alerta['resuelta'] ?? false;
-    return Card(
-      child: ListTile(
-        leading: Icon(
-          isResolved ? Icons.check_circle : Icons.warning,
-          color: isResolved ? Colors.green : _getAlertColor(alerta['nivel']),
-        ),
-        title: Text(alerta['mensaje']),
-        subtitle: Text('${alerta['fecha']} - Nivel: ${alerta['nivel']}'),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (!isResolved && onResolve != null)
-              IconButton(
-                icon: const Icon(Icons.check, color: Colors.green),
-                onPressed: onResolve,
-              ),
-            if (onDelete != null)
-              IconButton(
-                icon: const Icon(Icons.delete, color: Colors.red),
-                onPressed: onDelete,
-              ),
-            const Icon(Icons.arrow_forward),
-          ],
-        ),
-        onTap: onTap,
-      ),
-    );
-  }
-
-  Color _getAlertColor(String nivel) {
-    switch (nivel) {
-      case 'Alto':
-        return Colors.red;
-      case 'Medio':
-        return Colors.orange;
-      default:
-        return Colors.yellow;
     }
   }
 }
